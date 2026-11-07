@@ -1,0 +1,21 @@
+{
+  "name": "spac3",
+  "version": "147.0.0",
+  "private": true,
+  "type": "module",
+  "description": "SPAC3 / Space Radio web app",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/build.mjs --serve",
+    "verify": "node scripts/verify-baseline.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.117.3"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
