@@ -1,0 +1,220 @@
+/* The sketchpad's styles: the drawing area, the tools line, the pop-up sheets and the send pop-up.
+   Used by the room (room.html) and the standalone page (sketch.html); loaded before the page's own stylesheet.
+   Collected from the old shared.css / room.css by tools/css-extract.mjs; edit it here like any stylesheet. */
+
+.sketch-body { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.sketch-paper-wrap { position: relative; background: #fff; border-radius: 10px; border: 1px solid var(--border); aspect-ratio: 3 / 2; width: 100%; overflow: hidden; }
+#sketchCanvas { width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.sketch-overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+#sketchCanvas.is-eraser { cursor: cell; }
+#sketchCanvas.is-locked { touch-action: auto; cursor: default; }
+.sketch-paper-wrap.is-locked { outline: 2px solid var(--accent); outline-offset: -2px; }
+.sketch-viewchip { position: absolute; top: 6px; right: 6px; z-index: 3; padding: 3px 9px; min-height: 24px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.25); background: rgba(17,24,39,0.78); color: #fff; font-size: 11px; font-variant-numeric: tabular-nums; cursor: pointer; }
+.sketch-viewchip[hidden] { display: none; }
+.sketch-context { position: absolute; left: 6px; right: 6px; bottom: 6px; z-index: 3; display: flex; gap: 4px; overflow-x: auto; padding: 4px; border-radius: 12px; background: rgba(17,24,39,0.86); border: 1px solid rgba(255,255,255,0.18); scrollbar-width: none; }
+.sketch-context[hidden] { display: none; }
+.sketch-context::-webkit-scrollbar { display: none; }
+.sk-cbtn { flex: 0 0 auto; min-width: 34px; height: 32px; padding: 0 9px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.08); color: #fff; font-size: 13px; white-space: nowrap; }
+#sketchTfApply { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #05060f; font-weight: 700; border: 0; }
+.sketch-bar { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.sk-btn .sk-ico { pointer-events: none; }
+.sk-btn:disabled { opacity: 0.35; cursor: default; }
+.sk-btn .sk-dot { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,0.5); }
+.sketch-sheets { position: static; }
+.sketch-sheet[hidden] { display: none; }
+.sk-sheet-head.is-dragging { cursor: grabbing; }
+.sk-sheet-head strong { flex: 1; }
+.sk-x { width: 30px; height: 30px; padding: 0; border-radius: 50%; }
+.sk-sub { margin: 10px 0 5px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-dim); }
+.sk-sec[hidden] { display: none; }
+.sk-toolgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
+.sk-toolbtn { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; border-radius: 10px; font-size: 11px; }
+.sk-toolbtn .sk-ico { font-size: 20px; line-height: 1; }
+.sk-brushes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 8px; }
+.sk-brush { display: flex; flex-direction: column; align-items: stretch; gap: 2px; padding: 4px 6px 5px; border-radius: 10px; font-size: 11px; text-align: left; }
+.sk-brushprev { width: 100%; height: 30px; display: block; border-radius: 6px; background: rgba(255,255,255,0.05); }
+.sk-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.sk-chip { padding: 6px 10px; border-radius: 999px; font-size: 12px; }
+.sk-slider { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: 12px; }
+.sk-label { flex: 0 0 74px; color: var(--text-dim); }
+.sk-val { flex: 0 0 38px; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-dim); }
+.sk-select { flex: 1; min-width: 0; padding: 6px 8px; border-radius: 8px; background: var(--bg-panel-2); color: var(--text); border: 1px solid var(--border); }
+.sk-toggle { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 7px 8px; margin: 3px 0; border-radius: 10px; font-size: 12px; }
+.sk-box { width: 16px; height: 16px; border-radius: 5px; border: 2px solid var(--text-dim); flex: 0 0 auto; }
+.sk-toggle.is-on .sk-box { background: var(--accent); border-color: var(--accent); box-shadow: inset 0 0 0 2px #12172b; }
+.sk-togrow { display: flex; flex-wrap: wrap; gap: 4px; }
+.sk-togrow .sk-toggle { width: auto; flex: 1 1 auto; }
+.sk-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.sk-act { padding: 7px 11px; border-radius: 10px; font-size: 12px; min-height: 34px; }
+.sk-act.is-armed { background: #fb7185; color: #2b0410; }
+.sk-layeracts .sk-act { min-width: 38px; padding: 6px 8px; font-size: 15px; }
+.sk-sb, .sk-hue { display: block; width: 100%; border-radius: 8px; touch-action: none; margin-bottom: 8px; cursor: crosshair; }
+.sk-sb { height: 130px; }
+.sk-hue { height: 22px; }
+.sk-hexrow { display: flex; align-items: center; gap: 8px; margin: 4px 0 6px; }
+.sk-cur { width: 30px; height: 30px; border-radius: 8px; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,0.5); flex: 0 0 auto; }
+.sk-hex { width: 92px; padding: 6px 8px; border-radius: 8px; background: var(--bg-panel-2); color: var(--text); border: 1px solid var(--border); font-family: ui-monospace, monospace; }
+.sk-swatches { display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; }
+.sk-swatch { width: 28px; height: 28px; padding: 0 !important; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4) !important; flex: 0 0 auto; }
+.sk-swatch.is-active { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sk-swatch.sk-add { background: transparent; font-size: 16px; line-height: 1; }
+.sk-paper { width: 34px; height: 34px; padding: 0 !important; border-radius: 8px; border: 2px solid rgba(255,255,255,0.35) !important; }
+.sk-paper.is-active { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sk-layers { display: flex; flex-direction: column; gap: 4px; margin: 6px 0; }
+.sk-layer { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,0.04); cursor: pointer; }
+.sk-eye { width: 30px; height: 30px; padding: 0; border-radius: 8px; flex: 0 0 auto; font-size: 14px; }
+.sk-lname { display: flex; flex-direction: column; min-width: 0; font-size: 12px; }
+.sk-layerprops { border-top: 1px solid var(--border); padding-top: 4px; }
+.sk-help { margin-top: 10px; font-size: 12px; color: var(--text-dim); }
+.sk-help ul { margin: 6px 0 0; padding-left: 18px; }
+.sk-help li { margin: 4px 0; }
+.sketch-sidebars { display: none; position: absolute; left: 8px; top: 12%; bottom: 12%; z-index: 3; flex-direction: column; justify-content: center; gap: 22px; }
+.sk-vbar { position: relative; width: 26px; flex: 1 1 0; max-height: 220px; border-radius: 14px; background: rgba(17,24,39,0.7); border: 1px solid rgba(255,255,255,0.25); touch-action: none; overflow: visible; }
+.sk-vfill { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 13px; background: rgba(96,165,250,0.55); pointer-events: none; }
+.sk-vknob { position: absolute; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.5); pointer-events: none; }
+.sk-vbubble { display: none; position: absolute; left: 34px; top: 50%; transform: translateY(-50%); padding: 3px 8px; border-radius: 8px; background: rgba(17,24,39,0.92); color: #fff; font-size: 12px; white-space: nowrap; }
+.sk-vbar.is-drag .sk-vbubble { display: block; }
+html.sketch-full-open, html.sketch-full-open body { overflow: hidden; }
+.sketch-paper-wrap.is-custom-height { aspect-ratio: auto; height: var(--sketch-paper-height); background: var(--bg-panel-2); }
+.sk-curname { margin: 2px 0 8px; font-size: 12px; color: var(--text-dim); word-break: break-word; }
+.sk-curname.is-saved { color: #86efac; }
+.sk-namerow { display: flex; gap: 6px; margin-bottom: 8px; }
+.sk-nameinput { flex: 1 1 auto; min-width: 0; padding: 7px 9px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.22); background: rgba(255,255,255,0.06); color: var(--text); font-size: 14px; }
+.sk-nameinput:focus { outline: none; border-color: var(--accent); }
+.sk-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 8px; margin: 8px 0; }
+.sk-card { display: flex; flex-direction: column; gap: 4px; padding: 6px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.04); min-width: 0; }
+.sk-card.is-current { border-color: var(--accent); }
+.sk-badge { position: absolute; left: 4px; top: 4px; padding: 1px 7px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; }
+.sk-card .sk-nameinput.sk-rename { width: 100%; padding: 3px 6px; font-size: 12px; }
+.sk-cardmeta { font-size: 10px; color: var(--text-dim); }
+.sk-cardbtns { display: flex; gap: 4px; }
+.sk-act.sk-mini { flex: 1 1 0; min-width: 0; padding: 3px 4px; min-height: 28px; font-size: 12px; }
+.sk-empty { grid-column: 1 / -1; text-align: center; }
+.sk-cardname:hover { text-decoration: underline dotted; }
+.sk-mini[data-act="rename"] { flex: 2 1 0; }
+.sketch-net-chip { font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-panel-2); color: var(--text-dim, #9aa3c7); white-space: nowrap; }
+.sketch-net-chip.is-offline { color: #2b1a00; background: #fbbf24; border-color: #f59e0b; }
+.sk-btn[data-queued]:not([data-queued=""])::after { content: attr(data-queued); position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: #fbbf24; color: #2b1a00; font-size: 10px; font-weight: 700; line-height: 16px; text-align: center; }
+.sk-btn[data-queued] { position: relative; }
+.sk-send-prev { display: flex; justify-content: center; margin: 8px 0 10px; padding: 6px; border-radius: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); }
+.sk-send-img { display: block; max-width: 100%; max-height: 38vh; border-radius: 6px; background: #fff; }
+.sk-send-count { display: block; text-align: right; font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.sk-send-go { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #05060f; border: 0; }
+.sk-vlabel { position: absolute; inset: 4px 0; z-index: 3; writing-mode: vertical-rl; text-orientation: upright; display: flex; align-items: center; justify-content: center; pointer-events: none; user-select: none; -webkit-user-select: none; font-family: 'Trebuchet MS', 'Arial Rounded MT Bold', system-ui, sans-serif; font-weight: 500; font-size: 15px; line-height: 1.2; letter-spacing: 0; }
+.sk-vlabel i.c0 { color: #ff8cc6; }
+.sk-vlabel i.c1 { color: #ffe680; }
+.sk-vlabel i.c2 { color: #7ff5e4; }
+.sk-vlabel i.c3 { color: #d2a6ff; }
+.sketch-sidebars .sk-vknob { z-index: 4; }
+.sketch-sidebars .sk-vlabel { align-items: center; justify-content: center; inset: 4px 0 4px; transform: translateY(10%); }
+.sk-strip .sk-btn { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.sk-strip .sk-btn.is-lifted { position: relative; z-index: 6; box-shadow: 0 8px 20px rgba(0,0,0,.45); opacity: .96; cursor: grabbing; }
+.sk-strip.is-reordering .sk-btn { cursor: grabbing; }
+.sk-cbtn.is-on { border-color: var(--accent); color: var(--accent); }
+.sk-btn { position: relative; flex: 1 1 31px; min-width: 28px; max-width: 44px; height: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; font-size: 17px; line-height: 1; }
+.sk-btn.is-open, .sk-btn.is-active { border-color: var(--accent); color: var(--accent); }
+.sk-btn.sk-send { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #05060f; border: 0; }
+.sketch-sheet { position: fixed; z-index: 8000; width: min(360px, calc(100vw - 16px)); max-height: min(62vh, 480px); display: flex; flex-direction: column; overflow: hidden; overscroll-behavior: contain; background: #12172b; color: var(--text); border: 1px solid rgba(255,255,255,0.18); border-radius: 14px; box-shadow: 0 12px 40px rgba(0,0,0,0.55); padding: 10px 12px 12px; font-size: 13px; }
+.sk-sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 2px 0 6px; flex: 0 0 auto; }
+.sk-sheet-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 14px; }
+.sk-sheet-head { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+.sk-toolbtn.is-active, .sk-chip.is-active, .sk-brush.is-active { border-color: var(--accent); color: var(--accent); background: rgba(96,165,250,0.12); }
+.sk-slider input[type=range] { flex: 1; min-width: 0; padding: 0; height: 28px; }
+.sk-layer.is-active { border-color: var(--accent); background: rgba(96,165,250,0.14); }
+.sk-thumb { width: 54px; height: 36px; border-radius: 5px; border: 1px solid rgba(255,255,255,0.2); flex: 0 0 auto; background-image: linear-gradient(45deg,#cbd5e1 25%,transparent 25%,transparent 75%,#cbd5e1 75%),linear-gradient(45deg,#cbd5e1 25%,#fff 25%,#fff 75%,#cbd5e1 75%); background-size: 10px 10px; background-position: 0 0, 5px 5px; }
+.sk-lname small { color: var(--text-dim); font-size: 10px; }
+.sk-thumb { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; aspect-ratio: 3 / 2; padding: 0; border-radius: 7px; overflow: hidden; border: 1px solid rgba(255,255,255,0.14); background: #1f2437; cursor: pointer; font-size: 22px; }
+.sk-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+.sk-cardname { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sk-sheet-body { padding-bottom: 24px; }
+.sk-cardname { cursor: text; }
+.sk-send-note { width: 100%; resize: vertical; min-height: 54px; box-sizing: border-box; }
+.sk-send-note { background: rgba(255,255,255,0.06); color: var(--text, #fff); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; font: inherit; }
+.sketchpanel{flex:1;min-height:0;display:flex;flex-direction:column}
+.sk-btn{background:var(--btnbg);border:var(--btnb);color:var(--ink);cursor:pointer;border-radius:calc(var(--br)*.7)}
+.sk-btn.is-open,.sk-btn.is-active{background:var(--sel);color:var(--selink);border-color:var(--sel)}
+.sk-btn.sk-send{background:var(--btnp);color:var(--btnpink);border:var(--btnpb)}
+.sketch-sheet{background:var(--menubg);color:var(--ink);border:var(--pborder);border-radius:calc(var(--pr)*.6);font-family:var(--fb)}
+#sketchPanel.sketch-full{position:fixed!important;inset:0!important;width:auto!important;height:auto!important;max-width:none!important;margin:0!important;z-index:7000;border-radius:0;display:flex;flex-direction:column;gap:8px;padding:max(8px,env(safe-area-inset-top)) 8px max(8px,env(safe-area-inset-bottom));background:var(--solid,#0b1020);color:var(--ink);font-family:var(--fb)}
+#sketchPanel.sketch-full .sketch-body{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px}
+#sketchPanel.sketch-full .sketch-bar{justify-content:center;flex-wrap:nowrap}
+.sk-btn.sk-send{flex:1 1 140px;min-width:0;max-width:none;width:auto;height:36px;gap:6px;padding:0 10px;font-size:16px;border-radius:calc(var(--br,14px)*.9);box-shadow:0 4px 16px color-mix(in srgb,var(--p1,#7a4cff) 40%,transparent)}
+.sk-btn.sk-send .sk-send-lbl{font-size:12px;font-weight:800;letter-spacing:.05em;font-family:var(--fb,inherit);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.panel-half .sk-btn.sk-send{height:36px}
+.sk-send-actions{flex-wrap:wrap}
+.sk-send-friend{white-space:nowrap}
+.sk-friend-list{display:flex;flex-direction:column;gap:6px;margin:10px 0 4px;max-height:min(50vh,320px);overflow-y:auto}
+.sk-friend{display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;border-radius:14px;text-align:left;cursor:pointer;color:var(--ink,#fff);background:color-mix(in srgb,var(--ink,#fff) 8%,transparent);border:1px solid color-mix(in srgb,var(--ink,#fff) 16%,transparent);font-size:14px;font-weight:600}
+.sk-friend:hover,.sk-friend:focus-visible{background:linear-gradient(135deg,color-mix(in srgb,var(--p1,#7a4cff) 38%,transparent),color-mix(in srgb,var(--p4,#ff5ea8) 26%,transparent));border-color:color-mix(in srgb,var(--p1,#7a4cff) 70%,#fff)}
+.sk-friend-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sk-friend-dot{flex:none;width:9px;height:9px;border-radius:50%;background:color-mix(in srgb,var(--ink,#fff) 28%,transparent)}
+.sk-friend-dot.on{background:#3ddc84;box-shadow:0 0 6px #3ddc84}
+.sk-send-actions{flex-wrap:nowrap;gap:6px}
+.sk-send-actions button{padding-left:12px;padding-right:12px;white-space:nowrap;font-size:14px}
+.sk-send-actions button{padding:9px 10px;font-size:13px}
+.sk-send-actions{justify-content:flex-end;max-width:100%}
+.sk-send-actions button{flex:1 1 auto;min-width:0;padding:9px 6px}
+#sketchPanel.sketch-full .sketch-sidebars{display:flex}
+#sketchPanel.sketch-full .sketch-sidebars{left:max(8px,env(safe-area-inset-left,0px));top:10%;bottom:10%}
+@media (max-width:700px) {
+#sketchPanel.sketch-full .sketch-bar{flex-wrap:wrap}
+#sketchPanel.sketch-full .sk-btn.sk-send{flex:1 1 100%;order:99}
+}
+
+.sk-vlabel i { font-style: normal; display: block; }
+.sk-quick{display:none!important}
+#sketchPanel.sketch-full .sk-quick{display:inline-flex!important}
+#sketchPanel.sketch-full #sketchToolsBtn{display:none}
+#sketchPanel.sketch-full .sketch-bar{justify-content:flex-start;flex-wrap:nowrap;gap:6px;overflow-x:auto;scrollbar-width:none}
+#sketchPanel.sketch-full .sk-btn{flex:0 0 44px;max-width:none;height:42px;font-size:19px}
+#sketchPanel.sketch-full #sketchColorBtn,#sketchPanel.sketch-full #sketchUndo{margin-left:10px}
+#sketchPanel.sketch-full #sketchFullBtn{margin-left:auto}
+#sketchPanel.sketch-full #sketchLock{margin-left:0}
+#sketchPanel.sketch-full #sketchLock + .sk-send{margin-left:0}
+#sketchPanel.sketch-full .sk-btn.sk-send{flex:0 0 auto;margin-left:auto;padding:0 18px;height:42px}
+#sketchPanel.sketch-full .sk-btn.sk-send .sk-send-lbl{font-size:13px}
+.sk-strip{display:contents}
+@media (max-width:700px) {
+#sketchPanel.sketch-full .sketch-bar{flex-wrap:nowrap;overflow:visible;gap:6px}
+#sketchPanel.sketch-full .sk-strip{display:flex;flex:1 1 0;min-width:0;gap:5px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;touch-action:pan-x}
+#sketchPanel.sketch-full .sk-strip::-webkit-scrollbar{display:none}
+#sketchPanel.sketch-full .sk-strip{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 22px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 22px),transparent);padding-right:10px;margin-right:4px}
+#sketchPanel.sketch-full .sk-btn{flex:0 0 40px;height:40px;font-size:18px}
+#sketchPanel.sketch-full #sketchColorBtn,#sketchPanel.sketch-full #sketchUndo{margin-left:6px}
+#sketchPanel.sketch-full #sketchFullBtn,#sketchPanel.sketch-full #sketchLock{margin-left:0;flex:0 0 40px}
+#sketchPanel.sketch-full .sk-btn.sk-send{position:static;flex:0 0 48px;width:48px;padding:0;margin-left:0;order:0;height:40px}
+#sketchPanel.sketch-full .sk-btn.sk-send .sk-send-lbl{display:none}
+}
+
+.sk-send-lbl .sk-spac3{display:none}
+#sketchPanel.sketch-full .sk-send-lbl .sk-spac3{display:inline}
+#sketchPanel.sketch-full .sketch-sidebars{pointer-events:none}
+#sketchPanel.sketch-full .sketch-sidebars .sk-vbar{pointer-events:auto}
+#sketchPanel.sketch-full #sketchSizeBtn{display:none!important}
+.sk-gone{display:none!important}
+#sketchPanel.sketch-full .sk-nonfull{display:none!important}
+
+/* ---- the "Bottom bar" tab in ⋯ More, and the bar once it has been made to measure (sketchBarCustom.js) ---- */
+.sk-tabs { display: flex; gap: 4px; margin: 0 0 8px; border-bottom: 1px solid var(--border, rgba(255,255,255,.2)); }
+.sk-tab { flex: 1 1 0; padding: 8px 6px; font-size: 13px; font-weight: 600; background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--text-dim, #9aa3c7); border-radius: 0; cursor: pointer; }
+.sk-tab.is-active { color: var(--ink, #fff); border-bottom-color: var(--p1, var(--accent, #60a5fa)); }
+.sk-barrow { display: flex; align-items: center; gap: 8px; }
+.sk-rowico { flex: none; width: 22px; text-align: center; font-size: 16px; }
+.sk-opt { display: none !important; }
+/* in the custom bar every button is one line, equal width, nothing scrolls; the ones not chosen are .sk-off */
+#sketchPanel #sketchBar.is-custom { display: flex; flex-wrap: nowrap; align-items: center; justify-content: flex-start; gap: 6px; overflow: visible; }
+#sketchPanel #sketchBar.is-custom .sk-strip { display: flex; flex: 1 1 0; min-width: 0; gap: 4px; overflow: visible; padding: 0; margin: 0; -webkit-mask-image: none; mask-image: none; }
+#sketchPanel #sketchBar.is-custom .sk-strip .sk-btn:not(.sk-off) { display: inline-flex !important; flex: 1 1 0; min-width: 0; max-width: 46px; height: 40px; margin: 0; font-size: 18px; }
+#sketchPanel #sketchBar.is-custom .sk-btn.sk-off { display: none !important; }
+#sketchPanel #sketchBar.is-custom > .sk-btn:not(.sk-send):not(.sk-off) { display: inline-flex !important; flex: 0 0 34px; width: 34px; min-width: 0; height: 40px; margin: 0; font-size: 18px; } /* Full screen and Lock: always at the right, beside Send */
+#sketchPanel #sketchBar.is-custom .sk-btn.sk-send { flex: 0 0 auto; margin: 0 0 0 auto; height: 40px; padding: 0 14px; }
+@media (max-width: 700px) {
+#sketchPanel #sketchBar.is-custom .sk-btn.sk-send { flex: 0 0 44px; width: 44px; padding: 0; }
+#sketchPanel #sketchBar.is-custom .sk-btn.sk-send .sk-send-lbl { display: none; }
+}
+
+/* Stickers: the "Make a sticker" pop-up (sketchUI.js) */
+.sk-sticker-prev { display: flex; justify-content: center; align-items: center; margin: 8px 0 8px; padding: 10px; min-height: 120px; border-radius: 10px; border: 1px solid var(--border);
+  background-color: #cfd3e6; background-image: linear-gradient(45deg, #b9bed6 25%, transparent 25%, transparent 75%, #b9bed6 75%), linear-gradient(45deg, #b9bed6 25%, transparent 25%, transparent 75%, #b9bed6 75%); background-size: 16px 16px; background-position: 0 0, 8px 8px; }
+.sk-sticker-img { display: block; max-width: 100%; max-height: 34vh; object-fit: contain; }
+.sk-sticker-name { width: 100%; box-sizing: border-box; margin: 4px 0 8px; padding: 9px 10px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,0.06); color: inherit; font: inherit; }

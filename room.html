@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>SPAC3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Caveat:wght@500;700&family=Cormorant+Garamond:wght@500;600;700&family=DM+Serif+Display&family=Fredoka:wght@400;500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@500;700&family=Press+Start+2P&family=Shrikhand&family=Space+Grotesk:wght@400;500;700&family=Syne:wght@700&family=VT323&display=swap" />
+<link rel="stylesheet" href="shared.css" />
+<link rel="stylesheet" href="sketch.css" />
+<link rel="stylesheet" href="room.css" />
+<script>if ('serviceWorker' in navigator) window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });</script>
+</head>
+<body class="room-page">
+<div id="frame"><div id="stage" data-skin="nebula" data-look="quiet" data-bg="stars">
+  <div id="bg"></div><div id="rings"></div><div id="stars" class="deco"></div><div class="deco sun"></div><div class="deco gridfl"></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs><linearGradient id="hdrGrad" gradientUnits="userSpaceOnUse" x1="2" y1="0" x2="22" y2="0"><stop offset="0" style="stop-color:var(--p3)"/><stop offset="1" style="stop-color:var(--p1)"/></linearGradient></defs></svg>
+  <!-- header -->
+  <div id="hdr-l" class="row g12">
+    <a id="logo" class="h" href="index.html" title="Back to the globe" aria-label="SPAC3 -- back to the globe">SPAC3</a>
+    <a id="globeLink" class="gbtn hb" href="index.html" title="Go to the globe" aria-label="Go to the globe"><svg class="hico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.2"/><ellipse cx="12" cy="12" rx="4" ry="9.2"/><path d="M3 12h18M4.4 7.2h15.2M4.4 16.8h15.2"/></svg></a>
+    <div class="col" style="margin-left:8px">
+      <div class="row g8">
+        <b id="spac3Name">Loading…</b>
+        <button type="button" id="spac3FavoriteBtn" class="ic" style="display:none;" aria-pressed="false"></button>
+        <div class="room-members" id="roomMembers">
+          <button type="button" id="roomMembersBtn" class="btn hb" aria-haspopup="true" aria-expanded="false" title="In this room"></button>
+          <div class="menu pop" id="membersPanel" data-static hidden>
+            <div class="dim menu-head">IN THIS ROOM</div>
+            <div id="membersList" class="empty-note">Just you, so far.</div>
+          </div>
+        </div>
+      </div>
+      <div class="row g8" style="min-height:16px"><span id="spac3HeaderMessage" style="display:none;"></span><span id="spac3Sub" class="dim"></span></div>
+    </div>
+  </div>
+  <div id="hdr-r" class="row g10">
+    <div id="authArea" class="row g10"></div>
+    <button type="button" id="cog" data-guest aria-haspopup="true" aria-label="Settings" title="Settings"><svg class="hico" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M19.28 9.82 L22.33 10.11 L22.33 13.89 L19.28 14.18 L18.69 15.61 L20.64 17.97 L17.97 20.64 L15.61 18.69 L14.18 19.28 L13.89 22.33 L10.11 22.33 L9.82 19.28 L8.39 18.69 L6.03 20.64 L3.36 17.97 L5.31 15.61 L4.72 14.18 L1.67 13.89 L1.67 10.11 L4.72 9.82 L5.31 8.39 L3.36 6.03 L6.03 3.36 L8.39 5.31 L9.82 4.72 L10.11 1.67 L13.89 1.67 L14.18 4.72 L15.61 5.31 L17.97 3.36 L20.64 6.03 L18.69 8.39ZM15.4 12A3.4 3.4 0 1 0 8.6 12A3.4 3.4 0 1 0 15.4 12Z"/></svg></button>
+  </div>
+
+
+  <nav id="rail" aria-label="Spaces"></nav>
+
+  <!-- the room -->
+  <div id="portwrap" data-shape="circle" data-k="room">
+    <div id="port" data-furn="lounge">
+      <div class="wall"></div><div class="flo"></div>
+      <svg class="gridl" viewBox="0 0 660 660" preserveAspectRatio="none" id="gridsvg"></svg>
+      <div class="fu ball st"></div><div class="fu dfl st"></div><div class="fu spk l st"></div><div class="fu spk r st"></div>
+      <div class="fu rug lo"></div><div class="fu lamp lo"><i></i><b></b></div><div class="fu sofa lo"><i></i><b></b><i></i></div><div class="fu plant pl1 lo"><i></i><b></b></div>
+      <div class="fu plant pl1 ga"><i></i><b></b></div><div class="fu plant pl2 ga"><i></i><b></b></div><div class="fu plant pl3 ga"><i></i><b></b></div><div class="fu plant pl4 ga"><i></i><b></b></div><div class="fu rug ga" style="width:260px;margin-left:-130px"></div>
+      <div id="people"></div>
+      <div class="stage-hint">Drag your avatar, or use arrow keys / WASD to move</div>
+      <div id="flyveil"><span id="flytxt">Flying…</span></div>
+    </div>
+    <div class="rhead" aria-hidden="true"><span class="rgrip">⠿</span><b class="wt">Room</b></div><div class="rz" aria-hidden="true"></div>
+    <div id="roomctl"><button type="button" class="wx" data-rmin aria-label="Minimize the room" title="Minimize the room">▁</button><button type="button" class="wx" data-rclose aria-label="Hide the room" title="Hide the room">✕</button></div>
+  </div>
+
+  <!-- Chat -->
+  <section class="win blob" id="w-chat" data-k="chat" style="--ac:var(--c-connect)" hidden>
+    <header class="wh"><span class="dot"></span><b class="h wt">Chat</b><span class="wsub dim" id="sub-chat"></span><div class="tabs hd-tabs" id="chatTabs"><button type="button" class="tab on" data-ct="chat">Chat</button><button type="button" class="tab" data-ct="room">In room</button><button type="button" class="tab" data-ct="friends">Friends</button></div><span style="flex:1"></span>
+      <span class="chip" id="chatPrivacyChip" hidden title="Your new messages are only visible to your friends">🔒 Friends only</span>
+      <button type="button" class="wx" id="chatSettingsBtn" aria-haspopup="true" aria-expanded="false" title="Chat settings -- who can see my messages" aria-label="Chat settings">⚙</button>
+      <button type="button" class="wx" data-w="chat" aria-label="Close Chat">✕</button></header>
+    <div class="wb">
+      <div class="menu pop chat-settings-pop" id="chatSettingsPop" data-static hidden>
+        <div class="chat-settings-head"><div class="dim menu-head">WHO CAN SEE MY MESSAGES</div><button type="button" class="wx" id="chatSettingsClose" aria-label="Close chat settings" title="Close">✕</button></div>
+        <label class="chat-settings-option"><input type="radio" name="chatVisibility" value="everyone" /><span><b>🌐 Everyone</b><small>Anyone in the room, signed in or not.</small></span></label>
+        <label class="chat-settings-option"><input type="radio" name="chatVisibility" value="friends" /><span><b>🔒 Friends only</b><small>Only people on your friends list (and you).</small></span></label>
+        <p class="chat-settings-note">Applies to messages you send from now on. Messages you've already sent keep the setting they were sent with.</p>
+        <div class="dim menu-head" style="margin-top:10px">IMAGE SIZE IN CHAT</div>
+        <div class="chat-img-sizes" role="radiogroup" aria-label="Image size in chat">
+          <label class="chat-settings-option chat-size-option"><input type="radio" name="chatImgSize" value="small" /><span><b>Small</b></span></label>
+          <label class="chat-settings-option chat-size-option"><input type="radio" name="chatImgSize" value="medium" /><span><b>Medium</b></span></label>
+          <label class="chat-settings-option chat-size-option"><input type="radio" name="chatImgSize" value="large" /><span><b>Large</b></span></label>
+        </div>
+        <div class="chat-settings-status" id="chatSettingsStatus" aria-live="polite"></div>
+      </div>
+      <div class="cpane col g8 grow" data-cp="chat"><div id="chatLog"></div>
+        <form id="chatForm"><textarea id="chatInput" rows="1" maxlength="500" placeholder="Say something…" autocomplete="off" aria-label="Message (Shift+Enter sends)"></textarea><button type="submit" class="btn p chat-send" aria-label="Send (Shift+Enter)" data-tip="Shift+Enter" style="width:40px;padding:0">➤</button></form></div>
+      <div class="cpane col g8 grow" data-cp="room" hidden><div id="membersList2" class="col g8 cx-list"></div><div class="cx-split" role="separator" aria-orientation="horizontal" aria-label="Drag to change how much room the list and the chat get" title="Drag to resize the list and the chat"></div><div class="cx-host" id="cxHost-room"></div></div>
+      <div class="cpane col g8 grow" data-cp="friends" hidden><div id="friendsInline" class="inline-friends cx-list" data-tab="chat"></div><div class="cx-split" role="separator" aria-orientation="horizontal" aria-label="Drag to change how much room the list and the chat get" title="Drag to resize the list and the chat"></div><div class="cx-host" id="cxHost-friends"></div></div>
+    </div><i class="rz" aria-hidden="true"></i></section>
+
+  <!-- Rooms -->
+  <section class="win blob" id="w-rooms" data-k="rooms" style="--ac:var(--c-explore)" hidden>
+    <header class="wh"><span class="dot"></span><b class="h wt">SPAC3S</b><span class="wsub dim" id="sub-rooms">Your favorite SPAC3s</span><span style="flex:1"></span><button type="button" class="wx" data-w="rooms" aria-label="Close SPAC3S">✕</button></header>
+    <div class="wb"><div id="roomsInline" class="inline-friends" data-tab="spac3s"></div></div><i class="rz" aria-hidden="true"></i></section>
+
+  <!-- Games -->
+  <section class="win blob" id="w-games" data-k="games" style="--ac:var(--c-play)" hidden>
+    <header class="wh"><span class="dot"></span><b class="h wt">Games</b><span class="wsub dim" id="sub-games">Play with friends</span><div class="gchips hd-chips" id="gchips"></div><span style="flex:1"></span><button type="button" class="wx" data-w="games" aria-label="Close Games">✕</button></header>
+    <div class="wb"><div class="gstage" id="gstage"></div><div class="dim gtables" id="gtables"></div></div><i class="rz" aria-hidden="true"></i></section>
+
+  <!-- Sketch -->
+  <section class="win blob" id="w-sketch" data-k="sketch" style="--ac:var(--c-play)" hidden>
+    <header class="wh"><span class="dot"></span><b class="h wt">Sketchpad</b><span class="wsub dim">Draw together</span><span style="flex:1"></span><button type="button" class="wx" id="sketchOpenPage" aria-label="Open the Sketchpad on its own page" title="Open on its own page">↗</button><button type="button" class="wx" data-w="sketch" aria-label="Close Sketchpad">✕</button></header>
+    <div class="wb"><div id="sketchPanel" class="sketchpanel">
+      <div class="sketch-body">
+        <div class="sketch-paper-wrap"><canvas id="sketchCanvas" width="1200" height="800" aria-label="Sketchpad drawing area"></canvas></div>
+        <div class="sketch-bar" id="sketchBar" role="toolbar" aria-label="Sketchpad tools"></div>
+      </div></div><div id="sketchDock"></div></div><i class="rz" aria-hidden="true"></i></section>
+
+  <!-- Watch & listen -->
+  <section class="win blob" id="w-watch" data-k="watch" style="--ac:var(--c-stream)" hidden>
+    <header class="wh"><span class="dot"></span><b class="h wt">SPAC3 RADiO</b><span class="wsub dim" id="sub-watch"></span>
+      <div class="tabs media-tabs hd-tabs" role="tablist">
+        <button type="button" id="mediaTabDefaultBtn" class="tab on" role="tab" aria-selected="true"><span class="ti">🎵</span><span class="tl"> Picks</span></button>
+        <button type="button" id="mediaTabLiveBtn" class="tab" role="tab" aria-selected="false"><span class="ti">🔴</span><span class="tl"> Live</span></button>
+      </div>
+      <button type="button" class="wx hdskip" id="hdPrev" title="Previous" aria-label="Previous track"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 5v14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/><path d="M19 5.5v13a.8.8 0 01-1.25.66L8.6 12.66a.8.8 0 010-1.32l9.15-6.5A.8.8 0 0119 5.5z" fill="currentColor"/></svg></button><button type="button" class="wx hdskip" id="hdPlay" title="Play" aria-label="Play or pause the music" hidden><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path class="hp-play" d="M8 5.2v13.6a.8.8 0 001.24.67l10.2-6.8a.8.8 0 000-1.34L9.24 4.53A.8.8 0 008 5.2z" fill="currentColor"/><g class="hp-pause" fill="currentColor" style="display:none"><rect x="6" y="5" width="4.2" height="14" rx="1.2"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.2"/></g></svg></button>
+      <button type="button" class="wx hdskip" id="hdNext" title="Next" aria-label="Next track"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M18 5v14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/><path d="M5 5.5v13a.8.8 0 001.25.66l9.15-6.5a.8.8 0 000-1.32l-9.15-6.5A.8.8 0 005 5.5z" fill="currentColor"/></svg></button><span class="hdnum" id="hdNum" title="Track number" aria-label="Track number"></span>
+      <span style="flex:1"></span>
+      <button type="button" class="wx" id="mediaMenuBtn" title="Playlist, queue and more" aria-label="Playlist, queue and more" aria-expanded="false"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M13 6h7"/><path d="M6.5 3.5v5M4 6h5"/><path d="M4 12h16"/><path d="M4 18h16"/></svg></button>
+      <button type="button" class="wx" id="mediaHelpBtn" title="Help" aria-label="Help with SPAC3 RADiO" aria-expanded="false">?</button>
+      <button type="button" class="wx" data-w="watch" aria-label="Close SPAC3 RADiO">✕</button></header>
+    <div class="wb" id="radioPanel">
+            <div class="why" id="mediaHelpPanel" style="display:none;">
+        <span>Seeing "Sign in to confirm you're not a bot" on a YouTube video? In <b>Brave</b>, click the Brave Shield at the right end of the address bar, allow all cookies for this site, then reload.</span>
+        <span><b>SoundCloud:</b> tap <b>Listen in browser</b> to play it right here. <b>Play on SoundCloud</b> opens SoundCloud and takes you away from SPAC3.</span>
+        <span><b>Share screen:</b> only appears in browsers that can capture their own screen. Every phone can <i>watch</i> a share; if the video doesn't start, tap <b>Tap to watch</b>.</span>
+      </div>
+
+      <div class="mpanel col g8 grow" id="defaultMediaPanel">
+        <div class="vid" id="defaultVid">
+          <div class="media-embed-wrap" id="defaultMediaEmbedWrap"><div class="media-embed" id="defaultMediaEmbed"></div></div>
+          <div class="media-status" id="defaultMediaStatus">The room's owner hasn't picked anything yet.</div>
+          <button type="button" class="btn media-autoplay-prompt" id="defaultMediaAutoplayPrompt" style="display:none;">▶ Tap to start playing</button>
+          <div class="queue" id="defaultPlaylistPanel" style="display:none;"><button type="button" id="defaultMediaEditBtn" class="btn sm" title="Edit the creator's picks" style="display:none;">✏️ Edit playlist</button></div>
+<div class="pmore" id="defaultPmore">
+            <button type="button" id="defaultMediaLoopBtn" class="loopcard" aria-pressed="false" title="Loop this track"><span class="lp-ic" aria-hidden="true"><svg class="lp-svg" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="lpg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff4fd8"/><stop offset=".35" stop-color="#ffb22e"/><stop offset=".68" stop-color="#2ee6d6"/><stop offset="1" stop-color="#8a5cff"/></linearGradient></defs><path d="M20.5 12a8.5 8.5 0 1 1-2.7-6.2" fill="none" stroke="url(#lpg1)" stroke-width="2.3" stroke-linecap="round"/><path d="M18.6 2.6v3.7h-3.7" fill="none" stroke="url(#lpg1)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 12.2c.9 0 1.3-.7 1.3-1.3s-.7-1.9-1.9-1.9-2.6 1.1-2.6 2.6 1.4 3.2 3.2 3.2 3.9-1.7 3.9-3.9" fill="none" stroke="url(#lpg1)" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="lp-tx">Loop 1</span><span class="lp-sw" aria-hidden="true"></span></button>
+            <div class="pm-row pm-links"><button type="button" class="pm-l" data-proxy="#mediaHelpBtn">? Help</button></div>
+          </div>
+          <div class="queue" id="defaultMediaEditPanel" style="display:none;">
+            <div class="row g8 pl-edit-head"><b style="font-size:13px;flex:1" class="dim">Edit Creator's Picks</b><button type="button" id="defaultMediaEditDone" class="btn p sm" title="Done editing — back to the player (Esc)">✓ Done</button><button type="button" id="defaultMediaEditX" class="wx" aria-label="Close the editor" title="Close (Esc)">✕</button></div>
+            <form id="defaultMediaAddForm" class="media-add-form"><input id="defaultMediaUrlInput" type="url" placeholder="Paste a link (YouTube, Spotify, SoundCloud, video…)" /><button type="submit" class="btn p sm">Add</button></form>
+            <label class="btn sm media-upload-label" id="defaultMediaUploadLabel" for="defaultMediaFileInput"><input id="defaultMediaFileInput" type="file" accept="audio/*" hidden /><span>📁 Upload audio</span></label>
+            <div class="media-upload-status dim" id="defaultMediaUploadStatus"></div>
+            <div class="media-default-edit-list" id="defaultMediaEditList"></div>
+          </div>
+        </div>
+        <div class="mdock">
+        <div class="seek" id="defaultMediaSeekRow" style="display:none;"><input type="range" id="defaultMediaSeekBar" class="rng media-seek" min="0" max="100" value="0" step="1" aria-label="Seek" /><span class="media-time" id="defaultMediaTimeLabel">0:00</span></div>
+        <div class="mctl" id="defaultMediaControls" style="display:none;">
+          <button type="button" id="defaultMediaPrevBtn" class="mb" title="Previous" aria-label="Previous">⏮</button>
+          <button type="button" id="defaultMediaPlayPauseBtn" class="pbtn" title="Pause" aria-label="Play or pause">❚❚</button>
+          <button type="button" id="defaultMediaNextBtn" class="mb" title="Next" aria-label="Next">⏭</button>
+          <span class="media-default-position dim" id="defaultMediaPosition"></span>
+                    <span style="flex:1"></span>
+          <button type="button" id="defaultPlaylistBtn" class="btn sm" aria-expanded="false" aria-controls="defaultPlaylistPanel">☰ Playlist</button>
+        </div>
+
+        </div>
+      </div>
+
+      <div class="mpanel col g8 grow" id="liveListeningPartyPanel" style="display:none;">
+        <div class="vid" id="liveVid">
+          <div class="media-embed-wrap" id="mediaEmbedWrap"><div class="media-embed" id="mediaEmbed"></div><i class="embed-grab eg-t" aria-hidden="true"></i><i class="embed-grab eg-l" aria-hidden="true"></i><i class="embed-grab eg-r" aria-hidden="true"></i></div>
+          <div class="media-status" id="mediaStatus">Nothing playing yet.</div>
+          <button type="button" class="btn sm media-fullscreen-btn" id="mediaFullscreenBtn" title="Fullscreen" style="display:none;">⛶</button>
+          <div class="queue" id="mediaQueuePanel" style="display:none;">
+            <b class="dim media-queue-heading" id="mediaQueueHeading" style="font-size:13px;display:none;">Up next</b>
+            <div class="media-queue" id="mediaQueueList"></div>
+            <b class="dim" id="mediaHistoryHeading" style="font-size:13px;display:none;">Previously played</b>
+            <div class="media-history" id="mediaHistoryList"></div>
+            <div class="empty-note" id="mediaQueueEmpty">Nothing queued yet. Add a link or upload a file below.</div>
+            <form id="mediaAddForm" class="media-add-form"><input id="mediaUrlInput" type="url" placeholder="Paste a link (YouTube, Spotify, SoundCloud, video…)" /><button type="submit" class="btn p sm">Add</button></form>
+            <label class="btn sm media-upload-label" id="mediaUploadLabel" for="mediaFileInput"><input id="mediaFileInput" type="file" accept="audio/*" hidden /><span>📁 Upload audio</span></label>
+            <div class="media-upload-status dim" id="mediaUploadStatus"></div>
+            <button type="button" id="mediaScreenShareBtn" class="btn sm media-screen-share-btn" style="display:none;">🖵 Share screen</button>
+            <div class="media-screen-share-status dim" id="mediaScreenShareStatus" style="display:none;"></div>
+          </div>
+<div class="pmore" id="livePmore">
+            <button type="button" id="mediaLoopBtn" class="loopcard" aria-pressed="false" title="Loop this track"><span class="lp-ic" aria-hidden="true"><svg class="lp-svg" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="lpg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff4fd8"/><stop offset=".35" stop-color="#ffb22e"/><stop offset=".68" stop-color="#2ee6d6"/><stop offset="1" stop-color="#8a5cff"/></linearGradient></defs><path d="M20.5 12a8.5 8.5 0 1 1-2.7-6.2" fill="none" stroke="url(#lpg2)" stroke-width="2.3" stroke-linecap="round"/><path d="M18.6 2.6v3.7h-3.7" fill="none" stroke="url(#lpg2)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 12.2c.9 0 1.3-.7 1.3-1.3s-.7-1.9-1.9-1.9-2.6 1.1-2.6 2.6 1.4 3.2 3.2 3.2 3.9-1.7 3.9-3.9" fill="none" stroke="url(#lpg2)" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="lp-tx">Loop 1</span><span class="lp-sw" aria-hidden="true"></span></button>
+            <div class="pm-row pm-links"><button type="button" class="pm-l" data-proxy="#mediaHelpBtn">? Help</button><button type="button" class="pm-l" data-proxy="#mediaSettingsBtn">⚙ Settings</button></div>
+          </div>
+          <div class="queue" id="mediaSettingsPanel" style="display:none;">
+            <b style="font-size:13px" class="dim">Listening party settings</b>
+            <label class="media-settings-row"><span>Who can control playback</span><select id="mediaPlayPermissionSelect"><option value="owner">Owner only</option><option value="friends">Friends (people I've added)</option><option value="everyone">Everyone</option></select></label>
+            <label class="media-settings-row"><span>Who can add to the queue</span><select id="mediaAddPermissionSelect"><option value="owner">Owner only</option><option value="friends">Friends (people I've added)</option><option value="everyone">Everyone</option></select></label>
+            <label class="media-settings-row"><span>Who can share their screen</span><select id="mediaScreenSharePermissionSelect"><option value="owner">Owner only</option><option value="friends">Friends (people I've added)</option><option value="everyone">Everyone</option></select></label>
+            <div class="row g8"><button type="button" id="mediaSettingsSaveBtn" class="btn p sm">Save</button><button type="button" id="mediaSettingsCancelBtn" class="btn sm">Cancel</button></div>
+            <div class="media-settings-status dim" id="mediaSettingsStatus"></div>
+          </div>
+        </div>
+        <div class="mdock">
+        <div class="seek" id="mediaSeekRow"><input type="range" id="mediaSeekBar" class="rng media-seek" min="0" max="100" value="0" step="1" aria-label="Seek" /><span class="media-time" id="mediaTimeLabel">0:00</span></div>
+        <div class="mctl" id="mediaControlsRow">
+          <div class="mctl" id="mediaOwnerControls" style="display:none;">
+            <button type="button" id="mediaPrevBtn" class="mb" title="Previous" aria-label="Previous">⏮</button>
+            <button type="button" id="mediaPlayPauseBtn" class="pbtn" title="Play/Pause" aria-label="Play or pause">▶</button>
+            <button type="button" id="mediaSkipBtn" class="mb" title="Skip to next in queue" aria-label="Next">⏭</button>
+          </div>
+          <span style="flex:1"></span>
+          <button type="button" id="mediaSettingsBtn" class="btn sm" title="Listening party settings" aria-label="Listening party settings" style="display:none;">⚙<span class="lbl"> Settings</span></button>
+          <button type="button" id="mediaQueueToggleBtn" class="btn sm" aria-expanded="false" aria-controls="mediaQueuePanel">☰ Queue</button>
+        </div>
+
+        </div>
+      </div>
+    </div><i class="rz" aria-hidden="true"></i></section>
+
+  <!-- Ask AI: a private chat with the person's own AI (or the free one) -->
+  <section class="win blob float" id="w-ai" data-k="ai" style="--ac:var(--p5)" hidden>
+    <header class="wh"><span class="dot"></span><b class="h wt">Ask AI</b><span class="wsub dim" id="aiWho">the free AI</span><span style="flex:1"></span><button type="button" class="wx" id="aiSettings" aria-label="My AI settings" title="My AI settings">⚙</button><button type="button" class="wx" data-w="ai" aria-label="Close Ask AI">✕</button></header>
+    <div class="wb"><div class="ai-log" id="aiLog" aria-live="polite"></div>
+      <div class="row g8 ai-in"><textarea id="aiIn" rows="2" maxlength="2000" placeholder="Ask anything…  (Enter to send)"></textarea><button type="button" class="btn p" id="aiSend">Send</button></div>
+      <div class="row g8"><button type="button" class="btn sm" id="aiClear">Clear chat</button><span class="dim" style="font-size:11.5px">Private to you. Not shared with the room.</span></div></div>
+    <i class="rz" aria-hidden="true"></i></section>
+
+  <!-- Room Studio -->
+  <section class="win blob float" id="w-design" data-k="design" style="--ac:var(--p4)" hidden>
+    <header class="wh"><span class="dot"></span><b class="h wt">Room Studio</b><span class="wsub dim">Free to everyone</span><label class="dsee" id="dsee" title="How see-through this Room Studio box is (only this box; the other boxes use the settings cogwheel)"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 4a8 8 0 010 16z" fill="currentColor"/></svg><input type="range" class="rng" id="dseeRange" min="0" max="100" step="1" value="0" aria-label="How see-through the Room Studio box is" /><b id="dseeVal">0%</b></label><span style="flex:1"></span><button type="button" class="wx" id="dcollapse" aria-label="Collapse" title="Collapse so you can see the room">▁</button><button type="button" class="wx" data-w="design" aria-label="Close">✕</button></header>
+    <div class="wb"><div class="dtabs" id="dtabs"></div><div id="dstatus"></div><div class="dpane" id="dpane"></div>
+      <div class="dfoot"><button type="button" class="btn p" id="dsave" style="flex:1">★ Save this design…</button><button type="button" class="btn" id="dshuf">🎲 Surprise me</button><button type="button" class="btn" id="dreset" title="Reset to this style's defaults">↺</button></div></div><i class="rz" aria-hidden="true"></i></section>
+
+  <!-- the room's owner settings -->
+  <div class="modalbg" id="roomSettingsModal" hidden>
+    <div class="modal" id="roomBgSettingsPanel" role="dialog" aria-modal="true" aria-labelledby="roomSettingsTitle" style="width:440px">
+      <span class="h" id="roomSettingsTitle" style="font-size:26px">Room settings</span>
+      <label class="col g4" style="margin-top:12px"><span class="dim" style="font-size:12px">Room name</span><input class="search" type="text" id="roomNameInput" maxlength="80" placeholder="Name this room" /></label>
+      <label class="col g4" style="margin-top:10px"><span class="dim" style="font-size:12px">Message in the header</span><input class="search" type="text" id="roomMessageInput" maxlength="60" placeholder="e.g. Welcome to the crew!" /></label>
+      <div class="col g4" id="roomAddrRow" style="margin-top:12px"><span class="dim" style="font-size:12px">Show address</span><small class="dim" id="roomAddrHint" style="line-height:1.35"></small><div class="row g10" style="margin-top:4px"><button type="button" class="btn sm" id="roomAddrBtn" disabled>…</button></div></div>
+      <div class="row g10" style="margin-top:16px"><button type="button" class="btn p" id="roomBgSaveBtn">Save</button><button type="button" class="btn" id="roomBgCancelBtn">Cancel</button></div>
+      <div class="dim" id="roomBgStatus" style="margin-top:8px;min-height:18px;font-size:12.5px"></div>
+      <div class="sep" style="margin:12px 0"></div>
+      <button type="button" id="deleteSpac3Btn" class="btn sm danger-btn">🗑 Delete this SPAC3</button>
+    </div>
+  </div>
+
+  <div id="fxscan" class="fx"></div><div id="fxgrain" class="fx"></div>
+  <div id="overlay"></div>
+</div></div>
+<div id="modalRoot"></div>
+<script type="module" src="room.app.js"></script>
+</body>
+</html>

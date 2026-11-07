@@ -1,0 +1,14 @@
+{
+  "name": "SPAC3 Sketchpad",
+  "short_name": "Sketchpad",
+  "description": "The SPAC3 Sketchpad. Works with no connection.",
+  "start_url": "sketch.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b1020",
+  "theme_color": "#0b1020",
+  "icons": [
+    { "src": "sketch-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "sketch-icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

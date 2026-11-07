@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SPAC3</title>
+<link rel="stylesheet" href="shared.css" />
+<link rel="stylesheet" href="style.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Shrikhand&display=swap" />
+<link rel="stylesheet" href="siteHeader.css" />
+<!-- Leaflet powers the real, deep-zoom "confirm your exact spot" map
+     (street + satellite tiles) used when creating a SPAC3 -- separate
+     from the 3D globe.gl visualization below, which is just a low-res
+     whole-Earth image and can never show building-level detail no matter
+     how far you zoom it. -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script>if ('serviceWorker' in navigator) window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });</script>
+</head>
+<body>
+<script>
+/* If the page's scripts fail to start (a missing file, a blocked CDN, a script error) say so on screen instead of silently showing no globe. */
+(function () {
+  var FILES = ['globe.app.js', 'globe-earth.jpg', 'globe-topology.png', 'style.css']; var shown = false;
+  function box(lines) {
+    var d = document.getElementById('bootdiag');
+    if (!d) { d = document.createElement('div'); d.id = 'bootdiag'; d.style.cssText = 'position:fixed;left:12px;right:12px;bottom:60px;z-index:99999;background:#2a0d18;color:#ffd6e0;border:1px solid #ff5d8f;border-radius:12px;padding:10px 14px;font:13px/1.45 system-ui,sans-serif;max-height:40vh;overflow:auto'; (document.body || document.documentElement).appendChild(d); }
+    d.innerHTML = '<b>SPAC3 could not start.</b> Please send a screenshot of this box.<br>' + lines.map(function (l) { return String(l).replace(/</g, '&lt;'); }).join('<br>');
+  }
+  // Only SPAC3's own scripts count. A browser extension (a wallet such as MetaMask, an ad-blocker, ...) that fails inside its own code is not SPAC3 failing to start, so it is ignored.
+  function mine(src) { src = String(src || ''); if (/-extension:|MetaMask/i.test(src)) return false; return src.indexOf(location.origin) !== -1; }
+  function probe(why) {
+    if (shown) return; shown = true; var lines = [why];
+    Promise.all(FILES.map(function (f) { return fetch(f, { cache: 'no-store' }).then(function (r) { if (!r.ok) lines.push('Missing or blocked: ' + f + ' (HTTP ' + r.status + ')'); }).catch(function () { lines.push('Could not fetch: ' + f); }); })).then(function () { box(lines); });
+  }
+  window.addEventListener('error', function (e) {
+    var t = e.target;
+    // (Cloudflare adds its own analytics beacon to the page; an ad-blocker or a browser's shields often block it. That is not a SPAC3 problem, so it is ignored.)
+    if (t && t !== window && t.tagName === 'SCRIPT') { if (/cloudflareinsights|beacon\.min\.js|\/cdn-cgi\//.test(t.src || '')) return; probe('A script failed to load: ' + (t.src || '').split('/').pop()); }
+    else if (e.message && !/ResizeObserver/.test(e.message) && mine(e.filename)) { if (!shown) { shown = true; box(['Script error: ' + e.message + (e.filename ? ' (' + e.filename.split('/').pop() + ':' + e.lineno + ')' : '')]); } }
+  }, true);
+  window.addEventListener('unhandledrejection', function (e) { var r = e.reason; if (!shown && !window.__spac3Booted && mine(r && r.stack)) { shown = true; box(['Error: ' + ((r && r.message) || r)]); } });
+  setTimeout(function () { if (!window.__spac3Booted && !shown) probe('The page did not finish starting after 8 seconds.'); }, 8000);
+})();
+</script>
+
+  <div id="stars"></div>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs><linearGradient id="hdrGrad" gradientUnits="userSpaceOnUse" x1="2" y1="0" x2="22" y2="0"><stop offset="0" style="stop-color:var(--hdr-a)"/><stop offset="1" style="stop-color:var(--hdr-b)"/></linearGradient></defs></svg>
+  <header id="topbar">
+    <div class="topbar-left">
+      <a id="logo" href="index.html" title="Back to the globe" aria-label="SPAC3 -- back to the globe">SPAC3</a>
+      <a id="globeLink" href="index.html" title="Go to the globe" aria-label="Go to the globe"><svg class="hico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.2"/><ellipse cx="12" cy="12" rx="4" ry="9.2"/><path d="M3 12h18M4.4 7.2h15.2M4.4 16.8h15.2"/></svg></a>
+    </div>
+    <div id="authArea"></div>
+  </header>
+
+  <div id="searchWrap">
+    <div class="search-input-wrap">
+      <input id="searchInput" type="text" placeholder="Search an address, or a room name…" autocomplete="off" />
+      <div id="searchResults" class="search-results" hidden></div>
+    </div>
+    <button id="searchBtn">Go</button>
+  </div>
+
+  <div id="globeViz"></div>
+
+  <!-- +/- zoom for the globe -- see initZoomControls() in globe.js.
+       Mirrors what dragging/scrolling already does (both still work;
+       this is just a clickable, discoverable alternative to them, and
+       the only way to zoom at all on a device with no scroll wheel and
+       no pinch gesture, e.g. a mouse-only trackpad-less desktop). -->
+  <div id="globeZoomControls">
+    <button type="button" id="globeZoomInBtn" aria-label="Zoom in">+</button>
+    <button type="button" id="globeZoomOutBtn" aria-label="Zoom out">−</button>
+  </div>
+
+  <div id="hint">Drag to spin the globe · Search an address to create a SPAC3, or a room name to visit one</div>
+
+  <div id="modalRoot"></div>
+
+  <!-- Regular (non-module) script, loaded before the module below, so
+       window.L is already defined by the time globe.js's pickSpot flow
+       needs it. -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script type="module" src="globe.app.js"></script>
+</body>
+</html>

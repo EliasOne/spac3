@@ -1,0 +1,27 @@
+/* The SPAC3 top bar on the pages that are not a room (index.html, sketch.html): the same look as the room's header --
+   the SPAC3 wordmark in the heading font with the sunset gradient, then the gradient line-art globe that goes home,
+   and the account on the right. No page subtitle. The bar itself (position, backdrop) still comes from style.css.
+   The globe's gradient is the <svg> with id hdrGrad at the top of each page (same markup as room.html). Loaded after style.css. */
+:root { --hdr-a: hsl(50 100% 64%); --hdr-b: hsl(340 100% 62%); --hdr-font: 'Shrikhand', 'Fredoka', Georgia, serif; }
+
+#topbar .topbar-left { gap: 12px; }
+#topbar a#logo {
+  font-family: var(--hdr-font); font-weight: 400; font-size: 26px; letter-spacing: 0; line-height: 1; text-decoration: none;
+  background: linear-gradient(90deg, var(--hdr-a), var(--hdr-b)); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+#topbar a#globeLink {
+  display: grid; place-items: center; flex: 0 0 auto; width: 36px; height: 36px; border-radius: 50%;
+  background: none; border: 0; box-shadow: none; text-decoration: none;
+}
+#topbar a#globeLink:hover, #topbar a#globeLink:focus-visible { background: rgba(255, 255, 255, 0.1); }
+#topbar a#globeLink:focus-visible { outline: 2px solid var(--hdr-b); outline-offset: 2px; }
+#topbar a#globeLink .hico { width: 30px; height: 30px; display: block; fill: none; stroke: url(#hdrGrad); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+@media (max-width: 520px) { #topbar .topbar-left { gap: 8px; } }
+@media (max-width: 440px) {
+  #topbar a#logo { font-size: 22px; }
+  #topbar a#globeLink { width: 32px; height: 32px; }
+  #topbar a#globeLink .hico { width: 28px; height: 28px; }
+}
+/* Very narrow phones: the globe button is the way home; the wordmark makes room. */
+@media (max-width: 350px) { #topbar a#logo { display: none; } }

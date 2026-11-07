@@ -1,0 +1,3410 @@
+:root {
+  --bg: #05060f;
+  --bg-panel: #0c0e1f;
+  --bg-panel-2: #11142b;
+  --border: #232748;
+  --accent: #7dd3fc;
+  --accent-2: #c084fc;
+  --text: #e8eaf6;
+  --text-dim: #8b8fb3;
+  --danger: #fb7185;
+  --success: #4ade80;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: radial-gradient(ellipse at top, #0d1130 0%, #05060f 55%, #020208 100%);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  overflow: hidden;
+}
+
+/* Dark, theme-matched scrollbars everywhere (chat log, media queue/
+   history lists, modals, the room page body, etc) instead of the
+   browser's default white/light one, which stood out badly against
+   this page's dark background. Firefox uses scrollbar-color/-width;
+   every Chromium/WebKit browser uses the ::-webkit-scrollbar family --
+   both are set here so this covers either engine. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+*::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+#stars {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, #fff, transparent),
+    radial-gradient(1px 1px at 70% 65%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 85% 20%, #fff, transparent),
+    radial-gradient(1px 1px at 40% 80%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 55% 45%, #fff, transparent),
+    radial-gradient(1px 1px at 10% 60%, #fff, transparent),
+    radial-gradient(1px 1px at 95% 90%, #fff, transparent);
+  background-size: 600px 600px;
+  opacity: 0.6;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: 14px;
+}
+
+button {
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--bg-panel-2);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 9px 16px;
+  transition: border-color .15s ease, transform .1s ease;
+}
+button:hover { border-color: var(--accent); }
+button:active { transform: scale(0.97); }
+button.primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #06070f;
+  border: none;
+  font-weight: 600;
+}
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+input, select {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+input:focus, select:focus, textarea:focus { outline: 1px solid var(--accent); }
+
+/* ---------- top bar ---------- */
+#topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 22px;
+  background: linear-gradient(to bottom, rgba(5,6,15,0.9), rgba(5,6,15,0));
+}
+
+#logo {
+  font-weight: 800;
+  letter-spacing: 2px;
+  font-size: 20px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+a#logo { text-decoration: none; cursor: pointer; }
+a#logo:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 6px; }
+#logo span { color: var(--text-dim); font-weight: 500; letter-spacing: 1px; }
+
+#authArea { display: flex; align-items: center; gap: 10px; }
+/* The whole chip (avatar + username) opens the avatar/profile editor --
+   see renderAuthArea() in authUI.js, which used to need a separate
+   "Customize" button next to this for the same action. cursor/hover now
+   live on the chip itself rather than just the avatar badge inside it,
+   since the username text is just as clickable as the picture. */
+#userChip {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 12px 5px 5px;
+  cursor: pointer;
+}
+#userChip:hover { border-color: var(--accent); }
+
+#userChipAvatar {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+#userChip:hover #userChipAvatar {
+  transform: scale(1.12);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+/* ---------- friends + travel with (friends.js) ---------- */
+#friendsWrap { position: relative; }
+.friends-btn {
+  display: flex; align-items: center; gap: 6px;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.friends-panel {
+  position: absolute; top: calc(100% + 8px); right: 0;
+  width: min(340px, 92vw); max-height: min(70vh, 480px); overflow-y: auto;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 12px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.55);
+  z-index: 70;
+}
+
+/* Narrow screens: the Friends button sits mid-row, so a panel anchored to
+   it would run off the left edge -- pin it to the window instead. */
+@media (max-width: 700px) {
+  .friends-panel { position: fixed; top: 64px; left: 8px; right: 8px; width: auto; }
+}
+
+.friends-row-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.friends-row-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.friends-row-actions button { padding: 4px 9px; font-size: 12px; border-radius: 8px; }
+
+/* Friends / SPAC3s tabs inside the panel. */
+
+.friends-tabs button {
+  flex: 1; background: none; border: none; border-bottom: 2px solid transparent;
+  border-radius: 8px 8px 0 0; padding: 6px 8px; font-size: 13px; color: var(--text-dim);
+}
+
+/* Saved-SPAC3 rows (SPAC3s tab). */
+
+/* Seven-pointed favourite star beside a room's title (room.html). */
+
+@media (max-width: 700px) {
+
+  .friends-btn { padding: 6px 10px; font-size: 12px; }
+}
+/* Keep the header on one line on phones now that the button reads
+   "Friends & SPAC3s": nothing wraps, and the logo drops its "// ..." tail. */
+.friends-btn, #authArea .secondary, #authArea button { white-space: nowrap; }
+@media (max-width: 520px) {
+  #topbar { padding: 12px 10px; }
+  #authArea { gap: 6px; }
+  #logo { letter-spacing: 1px; font-size: 18px; }
+  #logo span { display: none; }
+  .friends-btn { gap: 4px; padding: 6px 9px; }
+  #userChip { padding-right: 9px; max-width: 110px; }
+  #userChip span:not(.avatar-badge) { overflow: hidden; text-overflow: ellipsis; }
+
+  #authArea button { padding-left: 10px; padding-right: 10px; font-size: 12px; }
+}
+
+/* Click-a-user menu (avatar on the stage / row in "In this room"). */
+.user-menu {
+  position: fixed; z-index: 80;
+  width: 250px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.55);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.user-menu-head { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; padding: 2px 4px 4px; }
+.user-menu button { text-align: left; font-size: 13px; padding: 8px 10px; }
+
+.user-menu-spac3s button { font-size: 12px; padding: 6px 10px; }
+
+/* "Are you sure you want to unfriend?" dialog. */
+.friends-confirm-backdrop {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(2,2,8,0.7);
+  display: flex; align-items: center; justify-content: center;
+}
+.friends-confirm {
+  width: min(360px, 92vw);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  font-size: 14px; line-height: 1.4;
+}
+
+/* Fly-with prompts + travel requests. Fixed to the top-center of the
+   window so they can't be missed, but they don't dim or block the page. */
+
+.friends-card-actions button { padding: 7px 14px; font-size: 13px; }
+
+/* ---------- globe stage ---------- */
+#globeViz { position: fixed; inset: 0; z-index: 1; }
+
+#searchWrap {
+  position: fixed;
+  top: 74px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  width: min(480px, 90vw);
+  display: flex;
+  gap: 8px;
+}
+.search-input-wrap { position: relative; flex: 1; min-width: 0; }
+#searchInput { width: 100%; border-radius: 999px; padding: 10px 16px; }
+#searchWrap button { border-radius: 999px; }
+
+/* Live room-name matches, shown under the search box while typing --
+   separate from the address search, which only runs on Enter/Go. */
+.search-results {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0; right: 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.45);
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.search-result-row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.search-result-row:last-child { border-bottom: none; }
+.search-result-row:hover, .search-result-row.highlighted { background: var(--bg-panel-2); }
+.search-result-name { font-size: 14px; font-weight: 600; color: var(--text); }
+.search-result-owner { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+
+#hint {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  color: var(--text-dim);
+  font-size: 13px;
+  background: rgba(12,14,31,0.7);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  border-radius: 999px;
+}
+
+/* ---------- globe zoom controls (index.html only) ---------- */
+/* Bottom-right, mirroring the volume panel's own bottom-left placement
+   (see below) -- same floating-pill visual language, opposite corner
+   so neither ever collides with the other or with #hint. */
+#globeZoomControls {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(12,14,31,0.85);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 6px;
+  backdrop-filter: blur(6px);
+}
+#globeZoomControls button {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text);
+  cursor: pointer;
+}
+#globeZoomControls button:hover:not(:disabled) { background: var(--bg-panel-2); border-color: transparent; }
+#globeZoomControls button:disabled { opacity: 0.35; cursor: default; }
+@media (max-width: 640px) {
+  #globeZoomControls button { width: 30px; height: 30px; font-size: 16px; }
+}
+
+/* ---------- volume control panel (every page) ---------- */
+/* Fixed to the bottom-left corner on every page (index.html AND
+   room.html) -- z-index is deliberately higher than the modal backdrop
+   and the full-screen Rustbelt Moon overlay (both 50) so it's always
+   reachable no matter what's on screen, including mid-game. */
+#volumeControlPanel {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(12,14,31,0.85);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 12px;
+  backdrop-filter: blur(6px);
+}
+
+#volumeSlider {
+  width: 80px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+@media (max-width: 640px) {
+  #volumeControlPanel { padding: 6px 10px; }
+  #volumeSlider { width: 60px; }
+  /* On a phone the full speaker + slider pill sat on top of the page
+     (chat box, player controls) wherever you scrolled. Collapsed by
+     default into a small, faint speaker button; tapping it opens the
+     slider (see initVolumeControlUI() in volumeControl.js), which tucks
+     itself away again after a few seconds or on a tap elsewhere. */
+
+  /* #hint spans nearly the full width of a phone screen (it's a long
+     sentence) and sits at the same bottom edge as #volumeControlPanel
+     (bottom-left), so on narrow screens the two were overlapping and
+     the volume panel covered part of the hint text. Lift the hint
+     above the volume panel's footprint (roughly 16px gap + ~34px tall
+     on mobile) and narrow/center it so it wraps into a short, readable
+     block instead of one wide line running behind the panel. */
+  #hint {
+    bottom: 84px;
+    max-width: min(320px, 88vw);
+    text-align: center;
+  }
+}
+
+/* ---------- modal ---------- */
+/* On room.html, --radio-clear-x and --sidepanel-clear-x are kept in sync
+   (by room.js) with the real left/right room columns -- SPAC3 RADiO on
+   the left, the members/chat column on the right -- so this dimmed
+   backdrop, and the modal centered inside it, never cover either one.
+   That's what keeps Room Chat (and the members list) usable while the
+   games menu, the online/local chooser, or a board game itself is open:
+   the backdrop only dims the middle, and the game ends up centered in
+   that narrower space, with chat sitting to its right the whole time.
+   On every other page (and before room.js has measured anything) both
+   variables are unset, so the fallback (0px each) makes this behave
+   like an ordinary full-screen backdrop. */
+.modal-backdrop {
+  position: fixed;
+  top: 0; bottom: 0;
+  left: var(--radio-clear-x, 0px);
+  right: var(--sidepanel-clear-x, 0px);
+  z-index: 50;
+  background: rgba(2,2,8,0.7);
+  display: flex; align-items: center; justify-content: center;
+}
+.modal {
+  width: min(380px, 92vw);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px;
+}
+.modal h2 { margin-top: 0; }
+
+/* ---------- confirm-your-spot map (pickSpot.js) ---------- */
+.modal.pick-spot-modal { width: min(640px, 94vw); }
+.pick-spot-sub { font-size: 13px; color: var(--text-dim); margin-bottom: 12px; }
+.pick-spot-map-wrap {
+  position: relative;
+  height: 380px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+/* The pin stays fixed at the exact center of the map view -- the map
+   pans/zooms underneath it -- so "wherever the pin is pointing" is always
+   simply the map's current center, same pattern as Uber/DoorDash-style
+   address pickers. Its tip (not its middle) marks the real spot. */
+.pick-spot-pin {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -100%);
+  font-size: 32px;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
+  pointer-events: none;
+  z-index: 1000;
+}
+.pick-spot-layers { display: flex; gap: 8px; margin-top: 10px; }
+
+.pick-spot-address {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--text-dim);
+  min-height: 18px;
+}
+
+/* Wider modal for the categorized avatar picker (signup + the
+   "Customize" editor) -- the default 380px modal is fine for a simple
+   login form but cramps a 60+ emoji, 6-category picker. */
+.modal.avatar-modal { width: min(460px, 94vw); max-height: 86vh; overflow-y: auto; }
+
+/* "Upload a photo" row in the avatar picker -- a <label> styled to
+   look exactly like the app's normal <button>s (it has to be a
+   <label>, not a real <button>, so clicking it opens the hidden file
+   input it wraps), plus a smaller "Remove photo" button and an inline
+   status message for "Uploading…" / errors. */
+
+/* ---------- photo crop/zoom editor ----------
+   Shown in place of the avatar picker's normal body (preview + emoji
+   grids + color grid all hidden together) while someone frames a photo
+   -- either one they just picked, or one they're re-editing via
+   "Edit photo". A circular "porthole" preview of what the round avatar
+   badge will actually look like, with drag-to-reposition and a zoom
+   slider; see openPhotoCropper() in authUI.js for the crop math. */
+
+/* ---------- room page ---------- */
+body.room-page { overflow: auto; }
+#roomWrap {
+  position: relative;
+  z-index: 1;
+  max-width: 1460px;
+  margin: 0 auto;
+  padding: 84px 18px 24px;
+  height: 100vh;
+  display: grid;
+  /* SPAC3 RADiO on the left, the room stage flexing in the middle, and
+     the social side (members / chat) on the right -- a real column,
+     off to the side, not a panel floating on top of anything else. That
+     means it can never cover the stage's avatars or a minigame's own
+     graphics the way an overlaid panel would; see .craft-roam-overlay
+     and .modal-backdrop for how those instead leave this column's width
+     alone so it stays visible (and audible) without needing to sit on
+     top of either one. */
+  /* Left column widened (was minmax(200px, 260px)) so the listening-
+     party video actually has room to be watched, not just glanced at --
+     see .media-embed-video below for how the embed itself now scales
+     with this column's real width instead of sitting at a fixed pixel
+     height regardless of it. --media-panel-width lets the player's own
+     resize handle (see initMediaResize() in room.js) grow or shrink
+     this column directly -- 380px is only the fallback for a
+     visitor who's never dragged it. */
+  /* --room-wrap-columns is the live, fully-computed template (all three
+     boxes' current widths/minimized state, in whichever order the
+     visitor has dragged them into) kept in sync by
+     updateRoomWrapColumns() in room.js -- see the "Resizable /
+     minimizable / re-orderable workspace boxes" section there. The
+     var(--media-panel-width, 380px) fallback chain only matters for the
+     brief instant before that JS runs (or if it somehow doesn't), so
+     the page still looks right rather than collapsing to nothing. */
+  grid-template-columns: var(--room-wrap-columns, var(--media-panel-width, 380px) minmax(0, 1fr) minmax(220px, 320px));
+  grid-template-rows: auto 1fr;
+  gap: 16px;
+}
+
+/* 3-column grid (name / message / actions) rather than a 2-child
+   flex row with justify-content: space-between -- with only 2
+   children, space-between puts them at the two edges and nothing in
+   the true middle. The outer two columns are equal (1fr each), which
+   is what keeps the middle message column sitting at the box's real
+   horizontal center regardless of how wide the left/right columns end
+   up being, rather than just "between" two things. Column 1 is the
+   room name (on the left, where it's always been); column 3 is the
+   🎨 button + back-link (on the right).
+   BUG HISTORY: these 3 children used to rely on plain grid
+   auto-placement (1st child -> column 1, 2nd -> column 2, etc.)
+   instead of each having an explicit grid-column. That breaks the
+   instant #spac3HeaderMessage is hidden (the common case -- most rooms
+   have no message set): a display:none element is removed from the
+   grid entirely, not just left empty, so auto-placement slid
+   .room-bg-header-actions back into the MIDDLE (auto-sized) column
+   instead of the right one, leaving the actual right-hand column empty
+   and "back to globe" sitting near the horizontal center instead of
+   the right edge. Pinning each child to its column explicitly keeps
+   all three in place regardless of which ones are currently visible. */
+#spac3Header {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 18px;
+}
+#spac3Header h1 { font-size: 18px; margin: 0; }
+#spac3Header .sub { color: var(--text-dim); font-size: 12px; margin-top: 2px; }
+#spac3Header .spac3-name-block { grid-column: 1; }
+#spac3Header .spac3-message-slot { grid-column: 2; }
+#spac3Header .room-bg-header-actions { grid-column: 3; justify-self: end; min-width: 0; }
+/* margin-left: auto keeps this pinned to the right edge of
+   .room-bg-header-actions regardless of how many icon buttons sit
+   before it (currently just 🎨, owner-only) -- e.g. a visitor who isn't
+   the owner sees no 🎨 button at all, and this still ends up flush
+   right rather than drifting toward the middle of the header. */
+#backLink { font-size: 13px; margin-left: auto; }
+
+/* The room name + "Owned by..." line, on the left side of the header. */
+.spac3-name-block { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+.spac3-name-display { display: flex; align-items: center; gap: 6px; max-width: 100%; }
+.spac3-name-display h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* The room's message, centered in #spac3Header -- see its own HTML
+   comment in room.html. Just a line of text, so no box/border needed
+   to read as a banner. Hidden via inline style (not just this rule)
+   whenever there's no message set, so it takes up zero grid space
+   then -- see renderNowPlaying() in room.js. */
+.spac3-message-slot {
+  justify-self: center;
+  max-width: 320px;
+  font-size: 14px;
+  font-style: italic;
+  font-weight: 600;
+  color: var(--accent-2);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#roomStage {
+  position: relative;
+  /* Used to be a solid #0a0c1e here, which sat UNDER .room-wall and
+     .room-floor below and would have blocked the room's ambient
+     background (#roomAmbiance -- the animated pattern or AI-generated
+     image, see roomBackground.js) even after .room-floor's own
+     background was made translucent (below), since this box's own
+     background is what fills the gap behind it. Transparent instead --
+     .room-wall (still fully opaque, unchanged) and .room-floor (now
+     translucent) together still tile this entire box top-to-bottom
+     with no gap, so nothing is lost for a 'classic' room with no
+     custom background: the page's own dark body background + #stars
+     shows through instead, same look as always. */
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  min-height: 540px;
+  cursor: pointer;
+}
+
+/* ---- Club-Penguin-igloo-style room decor, all CSS, no images ----
+   (The wall + space window along the top and the row of game icons are gone:
+   the whole stage is floor now, and all of it is walkable.) */
+.room-floor {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  /* BUG FIX: this was left at the old 26% when .room-wall's height was
+     halved to 13% above -- with #roomStage's own background transparent
+     (see its comment above), that mismatch left an unstyled 13%-26%
+     gap between the wall's bottom edge and the floor's top edge,
+     showing raw ambient background/black with no wall OR floor
+     treatment. Matches .room-wall's height exactly, same as before
+     that mismatch was introduced. */
+  top: 0;
+  /* Translucent rather than the old fully-opaque #12152e/#090b1c --
+     now that #roomStage's own background is transparent (see its own
+     comment above), whatever's actually set as the room's ambient
+     background shows through here: the animated pattern, the AI image,
+     or (classic rooms) just the page's own starfield. Alpha is a
+     deliberate middle ground, not as low as it could go -- avatars,
+     the floor grid lines, and the rug/couch/lamp/plant sitting on it
+     all still need to read clearly against whatever busy pattern or
+     image ends up behind them, so this dims the background rather
+     than baring it completely. */
+  background:
+    radial-gradient(ellipse at 50% 100%, rgba(125,211,252,0.07), transparent 60%),
+    linear-gradient(180deg, rgba(18,21,46,0.55) 0%, rgba(9,11,28,0.55) 100%);
+}
+/* =========================================================
+   Room floor customization -- the textured, owner-customizable surface
+   over the WALKABLE area specifically (see FLOOR in room.js: xMin 4,
+   xMax 96, yMin 15, yMax 92, in percent-of-stage units), not the whole
+   .room-floor div above (which extends further, right up to the
+   stage's own edges, as plain background). Sized to that exact
+   rectangle so the textured surface reads as "this is where you can
+   walk" -- left:4%/right:4% and top:15%/bottom:8% below are just
+   FLOOR's bounds expressed as CSS inset percentages (4, 100-96, 15,
+   100-92). A sibling of .room-floor, inserted BEFORE it in the DOM (see
+   room.html) rather than a child, so .room-floor's own translucent
+   background AND the rug/couch/lamp/plant sitting on it all paint on
+   top of this rather than the texture covering the furniture.
+
+   .room-floor-texture holds the shared box + the owner's chosen
+   opacity (applied inline) and color (applied as the --floor-cN custom
+   properties below, computed client-side in room.js's
+   applyFloorAppearance() the same way roomBackground.js's palette
+   colors are) -- .floor-texture-<name> picks WHICH pattern of gradient
+   layers renders using those same shared color variables, so every
+   texture reacts to the one color picker instead of needing its own.
+   'grid' is the default/first option -- the exact same faint grid this
+   used to be unconditionally (see the old .room-floor::before this
+   replaced), just now scoped to the walkable rect and tintable like
+   every other texture instead of a fixed, uncustomizable light blue. */
+.room-floor-texture {
+  position: absolute;
+  left: 4%; right: 4%;
+  top: 4%; bottom: 8%;
+  border-radius: 10px;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  /* --floor-c1 (faintest) through --floor-c5 (strongest) are set inline
+     per-room by applyFloorAppearance() -- these are just fallbacks so
+     the element never renders totally uncolored if that hasn't run yet
+     (e.g. this stylesheet loading before room.js's first paint). */
+  --floor-c1: rgba(125,211,252,0.10);
+  --floor-c2: rgba(125,211,252,0.20);
+  --floor-c3: rgba(125,211,252,0.35);
+  --floor-c4: rgba(125,211,252,0.55);
+  --floor-c5: rgba(125,211,252,0.8);
+}
+
+.floor-texture-grid {
+  background-image:
+    linear-gradient(var(--floor-c2) 1px, transparent 1px),
+    linear-gradient(90deg, var(--floor-c2) 1px, transparent 1px);
+  background-size: 42px 28px;
+}
+
+.floor-texture-wood {
+  background-image:
+    repeating-linear-gradient(0deg, var(--floor-c4) 0 2px, transparent 2px 44px),
+    repeating-linear-gradient(90deg, var(--floor-c1) 0 1px, transparent 1px 7px),
+    linear-gradient(180deg, var(--floor-c2), var(--floor-c3));
+}
+
+.floor-texture-stone {
+  background-image:
+    repeating-linear-gradient(0deg, var(--floor-c4) 0 2px, transparent 2px 54px),
+    repeating-linear-gradient(90deg, var(--floor-c4) 0 2px, transparent 2px 74px),
+    linear-gradient(160deg, var(--floor-c1), var(--floor-c3));
+}
+
+.floor-texture-water {
+  background-image:
+    repeating-radial-gradient(circle at 30% 30%, var(--floor-c3) 0 2px, transparent 2px 26px),
+    repeating-radial-gradient(circle at 70% 65%, var(--floor-c2) 0 2px, transparent 2px 34px),
+    linear-gradient(180deg, var(--floor-c1), var(--floor-c2));
+  animation: floorWaterDrift 16s linear infinite;
+}
+
+.floor-texture-fire {
+  background-image:
+    radial-gradient(circle at 25% 70%, var(--floor-c4) 0 18px, transparent 40px),
+    radial-gradient(circle at 60% 40%, var(--floor-c3) 0 22px, transparent 46px),
+    radial-gradient(circle at 80% 75%, var(--floor-c4) 0 16px, transparent 36px),
+    linear-gradient(0deg, var(--floor-c2), transparent);
+  background-size: 100px 100px, 130px 130px, 90px 90px, 100% 100%;
+  /* Brightness, not opacity -- opacity is the owner's own slider on
+     this same element (set inline), and a CSS animation targeting the
+     same property would just override it while running. */
+  animation: floorFireFlicker 2.4s ease-in-out infinite alternate;
+}
+
+.floor-texture-grass {
+  background-image:
+    repeating-linear-gradient(70deg, var(--floor-c3) 0 2px, transparent 2px 9px),
+    repeating-linear-gradient(110deg, var(--floor-c2) 0 2px, transparent 2px 11px),
+    linear-gradient(180deg, var(--floor-c1), var(--floor-c2));
+}
+
+.floor-texture-snow {
+  background-image:
+    radial-gradient(circle, var(--floor-c5) 0 2px, transparent 3px),
+    radial-gradient(circle, var(--floor-c4) 0 1.5px, transparent 2.5px),
+    linear-gradient(180deg, var(--floor-c2), var(--floor-c1));
+  background-size: 46px 46px, 30px 30px, 100% 100%;
+  background-position: 0 0, 15px 20px, 0 0;
+}
+
+.floor-texture-leaves {
+  background-image:
+    radial-gradient(circle at 20% 30%, var(--floor-c4) 0 10px, transparent 11px),
+    radial-gradient(circle at 55% 60%, var(--floor-c3) 0 8px, transparent 9px),
+    radial-gradient(circle at 80% 20%, var(--floor-c4) 0 9px, transparent 10px),
+    radial-gradient(circle at 35% 80%, var(--floor-c3) 0 7px, transparent 8px),
+    linear-gradient(180deg, var(--floor-c1), var(--floor-c2));
+  background-size: 90px 90px, 110px 110px, 100px 100px, 120px 120px, 100% 100%;
+}
+
+/* The optional decorative frame (borderEnabled in floor_params) -- a
+   glowing double edge around the walkable rectangle, independent of
+   which texture above is chosen, using the same shared color
+   variables so it always matches. */
+.room-floor-texture--bordered {
+  box-shadow:
+    inset 0 0 0 3px var(--floor-c5),
+    inset 0 0 22px 6px var(--floor-c3),
+    0 0 14px 2px var(--floor-c2);
+}
+
+/* =========================================================
+   Themed decorative borders (borderTheme in floor_params) -- a strip of
+   repeating themed emoji running along the OUTSIDE of the walkable
+   rectangle's edge, layered around/outside the plain glowing frame
+   above (borderEnabled) rather than replacing it -- the two are
+   independent and can be combined. See BORDER_THEMES and
+   applyFloorAppearance() in room.js, which is what actually fills each
+   edge strip's text content (a long repeated sequence of the chosen
+   theme's emoji -- e.g. jack-o'-lanterns/bats/spiders for Halloween, a
+   garland of lights+ornaments for Christmas) and toggles this
+   container's display. CSS here only supplies the shared strip
+   geometry/typography that every theme reuses.
+
+   #roomFloorBorderTheme is a single absolutely-positioned container
+   (inset:0, matching the stage) holding three edge strips -- bottom,
+   left, right. Deliberately no top strip: that edge sits right at the
+   wall/window (see .room-wall/.room-window above), so a border there
+   would overlap/clash with them instead of framing open floor space.
+   Text can't be split across two independent pseudo-elements' content
+   for three edges, so these are real child elements rather than
+   ::before/::after. z-index:4 sits deliberately between .game-kiosk (3)
+   and .avatar (5): above the kiosk box so the frame reads as
+   surrounding the room, but below avatars so walking past an edge
+   still shows the avatar in front of the decoration rather than
+   behind it. */
+.room-floor-border-theme {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+  display: none;
+}
+.room-floor-border-theme__edge {
+  position: absolute;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 19px;
+  line-height: 1;
+  letter-spacing: 3px;
+  user-select: none;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.55));
+}
+/* Bottom: a horizontal row flush against the stage's own true outer
+   bottom edge (0 -- not a percentage of anything, and not centered in
+   any margin) so it sits as close to that true edge, and as far from
+   .room-floor-texture's own bottom edge/glow, as this box can safely
+   go. Deliberately NOT pushed any further out than 0 -- see the
+   left/right comment below for why. Fine for .stage-hint's text to sit
+   on top of/cover part of it down here -- there's no walkable floor
+   being hidden either way. */
+.room-floor-border-theme__edge--bottom {
+  left: 4%; right: 4%;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  bottom: 0;
+}
+/* Left/right: same idea rotated -- a vertical column of upright emoji
+   (text-orientation: mixed keeps symbol/emoji glyphs upright in
+   vertical writing mode, just stacked top-to-bottom, rather than
+   sideways). Fixed full size, same as --bottom -- this doesn't shrink
+   at any stage width.
+   top/bottom deliberately DON'T match .room-floor-texture's own 15%/8%
+   bounds here -- those would put the column's top end only 2% below
+   .room-wall's bottom edge (13%) while leaving a full 8% gap at the
+   bottom, a lopsided frame. 17%/4% instead gives an even 4% gap on both
+   ends (13% + 4% = 17% from the wall; 4% from the stage's bottom edge,
+   same margin the horizontal bottom strip above uses), and the column's
+   own bottom end (96%) lines up with that bottom strip's own position
+   so the two corners actually meet instead of leaving a gap. */
+.room-floor-border-theme__edge--left,
+.room-floor-border-theme__edge--right {
+  top: 8%; bottom: 4%;
+  width: 30px;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+/* left/right sit 4px PAST the stage's own true left/right edge (not a
+   plain 0) -- closes a good chunk of the visual gap a glyph's own
+   built-in side-bearing leaves even when flush at 0, without going
+   anywhere near the -10px this once used, which cropped a chunk off
+   the wider/asymmetric fireworks & sparkler glyphs in the Patriotic
+   theme (a rounder, more centered glyph like the Halloween pumpkin was
+   fine even at -10 -- different emoji just don't share the same
+   internal padding, and that also isn't guaranteed identical across
+   every browser/OS's own emoji font). 4px is a deliberately
+   conservative middle ground: tested across six of the ten themes,
+   including Patriotic's fireworks/sparkler specifically, at up to
+   -12px with nothing visibly cropped, so 4px leaves a wide safety
+   margin against whatever a visitor's own emoji font renders slightly
+   differently. If a particular theme's glyph still looks clipped on
+   some device, dial this back toward 0 (guaranteed never to crop
+   anything, see #roomStage's overflow:hidden above) rather than
+   pushing it further negative. */
+.room-floor-border-theme__edge--left { left: -4px; }
+.room-floor-border-theme__edge--right { right: -4px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .floor-texture-water, .floor-texture-fire { animation: none; }
+}
+
+.room-rug {
+  position: absolute;
+  left: 50%; bottom: 8%;
+  transform: translateX(-50%);
+  width: 220px; height: 90px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(192,132,252,0.16), rgba(192,132,252,0.02) 70%);
+  border: 1px solid rgba(192,132,252,0.22);
+}
+
+.room-couch {
+  position: absolute;
+  left: 50%;
+  bottom: 4%;
+  transform: translateX(-50%);
+  width: 170px;
+  height: 42px;
+  background: linear-gradient(180deg, #5b3fa8, #402b7a);
+  border-radius: 14px 14px 6px 6px;
+  box-shadow: 0 6px 0 0 #2c1e5c, 0 10px 18px rgba(0,0,0,0.35);
+}
+.room-couch::before, .room-couch::after {
+  content: '';
+  position: absolute;
+  top: -16px;
+  width: 22px; height: 28px;
+  background: inherit;
+  border-radius: 10px 10px 0 0;
+}
+.room-couch::before { left: -2px; }
+.room-couch::after { right: -2px; }
+
+.room-lamp {
+  position: absolute;
+  left: 6%;
+  bottom: 6%;
+  width: 10px;
+  height: 66px;
+}
+.room-lamp::before {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 4px; height: 100%;
+  background: #3a3f6e;
+  border-radius: 2px;
+}
+.room-lamp::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 32px; height: 18px;
+  border-radius: 50% 50% 40% 40%;
+  background: #facc15;
+  box-shadow: 0 0 22px 7px rgba(250,204,21,0.35);
+}
+
+.room-plant {
+  position: absolute;
+  right: 6%;
+  bottom: 5%;
+  width: 46px;
+  height: 58px;
+}
+.room-plant::before {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 28px; height: 20px;
+  background: linear-gradient(180deg,#4b3a2f,#2f231b);
+  border-radius: 4px 4px 8px 8px;
+}
+.room-plant::after {
+  content: '';
+  position: absolute;
+  bottom: 16px; left: 50%;
+  transform: translateX(-50%);
+  width: 42px; height: 42px;
+  background:
+    radial-gradient(circle at 30% 70%, #4ade80 0 13px, transparent 14px),
+    radial-gradient(circle at 70% 65%, #22c55e 0 15px, transparent 16px),
+    radial-gradient(circle at 50% 38%, #4ade80 0 14px, transparent 15px);
+}
+
+/* Decorative signage on the wall, under the window -- purely cosmetic,
+   sitting above the line where avatars can actually walk (FLOOR.yMin in
+   room.js), so it reads as a sign advertising what's playable rather than
+   as part of the walk-up spot itself. Not clickable.
+   top used to be 22% (comfortably inside the old, taller 26%-of-stage
+   wall, below the window). Now that the wall is only 13% of the stage,
+   the window (same fixed height as before, see .room-window) takes up
+   nearly all of that thin strip -- there's no longer room for a gap
+   between the two, so this sits right at the wall's new bottom edge and
+   is allowed to touch/graze the window's own bottom edge above it,
+   same size (font-size unchanged) as before. */
+
+/* The actual walk-up-and-play spot: an empty, mostly-see-through floor box
+   below the window (deliberately understated -- dashed outline, barely-
+   there fill -- so it reads as "step here" rather than a big box in the
+   way), with just the word GAMES inside it. Lights up (solid border +
+   glow) once you're close enough to use it. */
+.game-kiosk {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex; align-items: center; justify-content: center;
+  width: 92px;
+  height: 44px;
+  background: rgba(125,211,252,0.05);
+  border: 2px dashed rgba(125,211,252,0.32);
+  border-radius: 10px;
+  z-index: 3;
+  cursor: pointer;
+  touch-action: manipulation; /* tap opens it immediately, no 300ms double-tap-zoom delay */
+  box-shadow: 0 0 0 0 rgba(125,211,252,0);
+  transition: box-shadow .3s ease, background-color .3s ease, border-color .3s ease, transform .15s ease;
+}
+
+/* The small "Play Online / Play Locally" chooser shown before a fresh
+   (nobody-playing-yet) game claims a seat -- see buildModeChooserModal()
+   in room.js. Two big tappable options, same modal/button base styling
+   as everywhere else. */
+.mode-chooser-modal { width: min(360px, 94vw); text-align: center; }
+
+.mode-chooser-text small { font-weight: 400; font-size: 11px; color: var(--text-dim); }
+
+.modal.game-modal { width: min(420px, 94vw); }
+.game-modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.game-modal-header h2 { margin: 0; }
+
+.ttt-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  max-width: 220px;
+  margin: 0 auto;
+}
+.ttt-cell {
+  aspect-ratio: 1;
+  font-size: 28px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg-panel-2);
+}
+.ttt-cell.x { color: var(--accent); }
+.ttt-cell.o { color: var(--accent-2); }
+.ttt-cell.win { border-color: var(--success); box-shadow: 0 0 0 1px var(--success); }
+
+.c4-col-btn { padding: 4px 0; }
+.c4-grid { background: #0c1b3a; padding: 8px; border-radius: 10px; }
+.c4-dot {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+}
+.c4-dot.red { background: #fb7185; }
+.c4-dot.yellow { background: #facc15; }
+.c4-dot.win { box-shadow: 0 0 0 2px #fff; }
+
+.chess-sq {
+  aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+  line-height: 1;
+  border-radius: 0;
+  padding: 0;
+}
+
+.checkers-piece-b { background: radial-gradient(circle at 35% 30%, #4b5065, #14161f 75%); }
+
+/* .craft-fps-btn is an <a>, not a <button> -- the shared button{} rule
+   elsewhere in this file only targets real button elements, so its
+   look (border, background, padding, radius) is repeated explicitly
+   here. Dashed border marks it as the experimental/beta option next
+   to the normal solid "Explore" button above it. */
+
+.craft-encounter-actions button { flex: 1; }
+
+/* -----------------------------------------------------------------
+   Rustbelt Moon roaming world -- a large overlay (not the small
+   .modal used by every other craftView) so it actually feels like a
+   walk-around space rather than a popup. Same idea as .modal-backdrop
+   above: --radio-clear-x (kept in sync by room.js) leaves the SPAC3
+   RADiO column's real width clear on the left, so the game's own
+   canvas/topbar/buttons shift over to make room instead of ever
+   rendering underneath that column.
+------------------------------------------------------------------ */
+
+/* Wraps the topbar/canvas/HUD/hint as one block (see buildCraftRoamView
+   in room.js) so they can be nudged back toward the real center of the
+   screen as a unit. .craft-roam-overlay itself only spans the space to
+   the right of the SPAC3 RADiO column -- it has to, so the game can
+   never render underneath that column -- but simply centering within
+   that narrower space (like this used to) leaves the game looking
+   pushed off toward the right side of the whole screen, since the
+   space to its right is bigger than the space taken up on the left by
+   the column. This margin instead centers it relative to the FULL
+   screen width whenever there's room to do that without sliding back
+   under the column -- max(0px, ...) is the floor that stops it right
+   at that column's edge once there isn't. 460px is half of this
+   block's own 920px max-width. */
+
+/* Floats over the canvas itself (bottom-right corner) instead of sitting
+   in the HUD row below it, so it's reachable with a second thumb at the
+   same time the other thumb is drag-moving elsewhere on the canvas --
+   see the comment where this button is created in room.js. */
+
+/* Same floating treatment as the attack button, offset to its left so
+   both are reachable without the thumb moving far -- only shown while a
+   dash-granting weapon (the Laser Tomahawk) is equipped, see
+   updateCraftRoamHud in room.js. */
+
+.stage-hint {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: var(--text-dim);
+  background: rgba(5,6,15,0.65);
+  padding: 4px 10px;
+  border-radius: 999px;
+  pointer-events: none;
+  /* Explicit z-index -- without one this sits BELOW
+     .room-floor-border-theme (z-index:4), since a positioned element
+     with no z-index paints under any positively-z-indexed sibling
+     regardless of DOM order. Higher than every other in-room z-index
+     (.game-kiosk-sign 2, .game-kiosk 3, .room-floor-border-theme 4,
+     .avatar 5) so this pill -- and its own translucent background --
+     always reads clearly on top of the bottom themed border strip
+     sitting right behind it, per its own comment in
+     .room-floor-border-theme__edge--bottom above. */
+  z-index: 6;
+}
+
+.avatar {
+  position: absolute;
+  width: 46px; height: 46px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  transform: translate(-50%, -50%);
+  transition: left .06s linear, top .06s linear;
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.15), 0 6px 16px rgba(0,0,0,0.4);
+  z-index: 5;
+}
+.avatar .avatar-face {
+  display: inline-block;
+  transition: transform .1s ease;
+}
+.avatar .name-tag {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  white-space: nowrap;
+  color: var(--text-dim);
+  background: rgba(5,6,15,0.7);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+.speech-bubble {
+  position: absolute;
+  bottom: 54px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  color: #111;
+  padding: 6px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  max-width: 160px;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  top: 100%; left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #fff;
+}
+
+#sidePanel { display: flex; flex-direction: column; gap: 10px; min-height: 0; min-width: 0; }
+/* The actual members+chat content now sits one level deeper, in
+   .panel-body (see the "workspace boxes" markup added alongside
+   .panel-toolbar below) -- this keeps the same flex column + 16px gap
+   + grow-to-fill behavior #sidePanel used to provide directly, so
+   #chatPanel's own flex:1 (letting the message log expand to fill
+   leftover height) still works exactly as before. */
+#sidePanel .panel-body { display: flex; flex-direction: column; gap: 16px; flex: 1; min-height: 0; }
+
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+}
+.panel h3 { margin: 0 0 10px; font-size: 13px; letter-spacing: 1px; color: var(--text-dim); text-transform: uppercase; }
+
+/* =========================================================
+   Resizable / minimizable / re-orderable workspace boxes -- shared
+   chrome for all three top-level boxes (#radioPanel/media,
+   #roomPanelWrap/room, #sidePanel/chat). See room.js's own big comment
+   block ("Resizable / minimizable / re-orderable workspace boxes") for
+   the full behavior; this is just the visual side of it.
+   ========================================================= */
+.workspace-box {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+.room-panel-wrap {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+/* #roomStage keeps its own min-height:540px (see below) -- flex:1 just
+   lets it also grow to fill whatever's left under the toolbar, the same
+   overall height the stage used to occupy back when it was the grid's
+   direct child. */
+.room-panel-wrap #roomStage { flex: 1; }
+
+.panel-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+.panel-drag-handle,
+.panel-resize-grip,
+.panel-minimize-btn {
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 8px;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  line-height: 1;
+  flex-shrink: 0;
+  touch-action: none;
+}
+.panel-drag-handle:hover, .panel-drag-handle:focus-visible,
+.panel-resize-grip:hover, .panel-resize-grip:focus-visible,
+.panel-minimize-btn:hover, .panel-minimize-btn:focus-visible {
+  border-color: var(--accent);
+  color: var(--text);
+}
+.panel-drag-handle { cursor: grab; }
+.panel-drag-handle:active { cursor: grabbing; }
+.panel-resize-grip { cursor: ew-resize; }
+.panel-minimize-btn { cursor: pointer; font-size: 15px; }
+.panel-toolbar-label {
+  flex: 1;
+  min-width: 0;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* While a box's grip is being dragged (source) -- bindPanelDragHandle()
+   in room.js sets a live translate() on the box itself every pointermove,
+   so it actually slides across the screen and rides on top of whatever
+   it passes over, rather than just sitting still and dimming. pointer-
+   events:none is what lets document.elementFromPoint() (used to figure
+   out which OTHER box is currently under the cursor) see through/past
+   this box while it's the one visually sitting at that spot -- without
+   it, the moving box would keep reporting itself as the drop target. */
+.panel-dragging-source {
+  position: relative;
+  z-index: 50;
+  opacity: 0.92;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+  cursor: grabbing;
+}
+/* While another box is currently the drop target underneath the pointer. */
+.panel-drop-target {
+  outline: 2px dashed var(--accent);
+  outline-offset: -3px;
+  border-radius: 14px;
+  background: rgba(125, 211, 252, 0.06);
+}
+
+/* Minimized: collapse everything except the toolbar, which itself
+   turns into a slim vertical strip (rotated label) so a box minimized
+   down to PANEL_MINIMIZED_TRACK_PX (48px, see room.js) still reads
+   clearly. The whole strip (not just the tiny minimize button) is a
+   restore target -- see bindPanelRestoreOnClick() in room.js -- so
+   there's a generous, easy-to-hit click area rather than just the icon
+   itself; the cursor/hover feedback here signal that. */
+.panel-minimized .panel-body,
+.panel-minimized .panel-resize-grip,
+.panel-minimized .media-resize-handle {
+  display: none !important;
+}
+.panel-minimized {
+  padding-left: 6px;
+  padding-right: 6px;
+  overflow: hidden;
+}
+.panel-minimized .panel-toolbar {
+  flex-direction: column;
+  height: 100%;
+  margin-bottom: 0;
+  padding: 8px 0;
+  cursor: pointer;
+}
+.panel-minimized .panel-toolbar:hover .panel-toolbar-label { color: var(--text); }
+.panel-minimized:hover { border-color: var(--accent); }
+.panel-minimized .panel-toolbar-label {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  flex: 1;
+  min-height: 0;
+  cursor: pointer;
+}
+.panel-minimized .panel-minimize-btn { transform: rotate(90deg); order: 1; }
+/* Restore button sits right under the grip, ahead of the label, instead
+   of at the very bottom of the tall strip -- where the floating volume
+   control (bottom-left) was sitting on top of it. */
+.panel-minimized .panel-toolbar-label { order: 2; }
+
+/* Games menu / Play Online-or-Locally chooser: pinned over the Room box
+   itself (room.js sets this backdrop's left/top/width/height from the
+   box's real rect -- see positionRoomBackdrop()), dimming only the room. */
+
+.modal-backdrop--room .modal {
+  width: min(380px, calc(100% - 16px));
+  max-height: calc(100% - 16px);
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+/* A started game: a free-floating window, dragged by its title bar to
+   anywhere on screen. The wrapper ignores the pointer so everything behind
+   stays usable; only the window itself catches clicks. */
+.modal-backdrop.modal-backdrop--floating {
+  left: 0; right: 0; top: 0; bottom: 0;
+  background: none;
+  display: block;
+  pointer-events: none;
+  z-index: 55;
+}
+.modal-backdrop--floating .modal {
+  position: absolute;
+  pointer-events: auto;
+  /* Resizing is a uniform scale (transform) from the top-left corner, so
+     the height cap shrinks/grows inversely to keep the *scaled* window
+     within the screen. */
+  max-height: calc((100vh - 16px) / var(--gscale, 1));
+  overflow-y: auto;
+  box-sizing: border-box;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.65);
+  transform-origin: 0 0;
+}
+
+body.dragging-game-modal, body.dragging-game-modal * { cursor: grabbing !important; user-select: none; }
+
+/* A normal column of the grid now, off to the side of the stage --
+   not a panel floating on top of the room or a minigame's own graphics.
+   align-self:start keeps it a natural, compact card instead of
+   stretching to match the tall stage/side columns next to it.
+   Staying visible (and audible) during a board-game popup or the
+   full-screen Rustbelt Moon roam world is instead handled by THOSE
+   overlays leaving this column's width alone (see .modal-backdrop and
+   .craft-roam-overlay, and the --radio-clear-x/-y variables room.js
+   keeps in sync with this column's real, rendered position) rather
+   than this panel sitting above them. */
+#radioPanel {
+  align-self: start;
+  max-height: calc(100vh - 180px);
+}
+/* The scrolling now happens on the body, not the whole box -- keeps
+   .panel-toolbar (the drag/resize/minimize controls) pinned in view at
+   the top instead of scrolling out of reach along with a long queue or
+   history list. */
+#radioPanel .panel-body { overflow-y: auto; min-height: 0; }
+.panel-minimized#radioPanel { max-height: none; }
+/* #radioPanel is align-self:start (a compact card), so as a minimized
+   strip it was only as tall as its two buttons -- squeezing its vertical
+   "SPAC3 RADiO" label down to nothing. Stretch it to the full row like
+   the Room and Chat strips so the title shows. */
+.panel-minimized#radioPanel { align-self: stretch; }
+/* ...but it's still a .panel, which draws a card background + border +
+   padding. The Room and Chat strips have none of that -- just their
+   buttons and label -- so strip it here too so all three look alike. */
+.panel-minimized#radioPanel {
+  background: none;
+  border-color: transparent;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* Switches between the two independent media panels further down --
+   see setActiveMediaTab() in room.js. Creator's Picks is the default
+   active tab, so its button starts with media-tab-btn--active already
+   in room.html; this is just the toggled state both buttons get their
+   class list flipped through on every switch. */
+#radioPanel .media-tabs-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+#radioPanel .media-tabs { display: flex; gap: 6px; flex: 1; min-width: 0; }
+#radioPanel .media-tab-btn {
+  flex: 1;
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 12px;
+  color: var(--text-dim);
+  cursor: pointer;
+  white-space: nowrap;
+}
+#radioPanel .media-tab-btn:hover { border-color: var(--accent); color: var(--text); }
+#radioPanel .media-tab-btn--active {
+  border-color: var(--accent);
+  color: var(--text);
+  background: rgba(125, 211, 252, 0.12);
+}
+
+/* "?" help button, shared by both tabs above (see mediaHelpBtn's own
+   comment in room.html) -- toggles mediaHelpPanel just below it. */
+#radioPanel .media-help-btn {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#radioPanel .media-help-btn:hover,
+#radioPanel .media-help-btn[aria-expanded="true"] {
+  border-color: var(--accent);
+  color: var(--text);
+}
+#radioPanel .media-help-panel {
+  margin-bottom: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-panel-2);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+#radioPanel .media-help-panel strong { color: var(--text); }
+#radioPanel .media-help-note { margin: 8px 0 0; padding-top: 8px; border-top: 1px solid var(--border); }
+
+/* Hidden entirely (rather than emptied) when its tab isn't the active
+   one -- see setActiveMediaTab(), which pauses (Creator's Picks) or
+   tears down (Live Listening Party) whichever side it's leaving, so
+   nothing kept invisible here is still audibly playing underneath. */
+#radioPanel .media-tab-panel + .media-tab-panel { margin-top: 0; }
+
+/* Small "3 / 8" position readout between Creator's Picks' Previous/Next
+   buttons -- reuses .media-owner-controls'/.media-ctrl-btn's own
+   spacing, just centered text between the two buttons instead of a
+   seek bar (there's no shared position here to show one for). */
+#radioPanel .media-default-position { font-size: 12px; color: var(--text-dim); flex: 1; text-align: center; }
+
+/* Shown only when a browser's autoplay policy actually blocked Creator's
+   Picks from starting on its own (see playDefaultMediaAt() in room.js).
+   A big, centered, obviously-clickable overlay -- the whole point of it
+   existing is that clicking ANYTHING counts as the user gesture every
+   autoplay-with-sound policy actually requires, so it needs to be easy
+   to find and easy to hit, not a small icon tucked in a corner. */
+#radioPanel .media-autoplay-prompt {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: rgba(10, 14, 26, 0.55);
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+#radioPanel .media-autoplay-prompt:hover { background: rgba(10, 14, 26, 0.7); }
+
+/* Owner-only editing list inside defaultMediaEditPanel -- deliberately
+   reuses .media-queue-item/-info/-title/-meta/-actions (see further
+   down) rather than its own parallel set of rules, since every one of
+   those selectors is already scoped to `#radioPanel .media-queue-item`
+   etc, not to #mediaQueueList specifically, so a row built with those
+   same classes anywhere else under #radioPanel (including here) picks
+   up identical styling for free. This class only adds the small gap
+   between the add-form/upload button above and the list itself. */
+#radioPanel .media-default-edit-list { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
+
+#radioPanel .media-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#radioPanel .media-panel-heading h3 { margin: 0; }
+#radioPanel .media-settings-btn {
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2px 7px;
+  font-size: 13px;
+  line-height: 1.6;
+  cursor: pointer;
+}
+#radioPanel .media-settings-btn:hover { border-color: var(--accent); }
+
+/* Owner-only -- who can play media / who can add to the queue. Toggled
+   by mediaSettingsBtn (see wireInteractions() in room.js). */
+#radioPanel .media-settings-panel {
+  margin: 8px 0;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-panel-2);
+}
+#radioPanel .media-settings-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+#radioPanel .media-settings-row select {
+  font-size: 12px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-panel);
+  color: var(--text);
+}
+#radioPanel .media-settings-actions { display: flex; gap: 6px; }
+#radioPanel .media-settings-status { font-size: 11px; color: var(--text-dim); margin-top: 6px; min-height: 14px; }
+
+#radioPanel .media-status { font-size: 12px; color: var(--text-dim); margin-bottom: 8px; word-break: break-word; }
+#radioPanel .media-embed { position: relative; width: 100%; min-height: 80px; border-radius: 10px; overflow: hidden; background: #000; }
+#radioPanel .media-embed iframe, #radioPanel .media-embed video, #radioPanel .media-embed audio { display: block; width: 100%; }
+
+/* Actual video content (YouTube/Vimeo/Twitch, and an uploaded/linked
+   video file) gets a real, properly proportioned screen instead of the
+   old fixed ~220px-tall box that used to make it look cramped no matter
+   how wide this column was -- aspect-ratio here means the iframe/video
+   element (set to width/height:100% of this box, overriding the
+   iframe's own width/height attributes) now scales up together with
+   this column's actual rendered width. See buildEmbedForItem() in
+   room.js for where this class gets added/removed -- audio-ish embeds
+   (Spotify/SoundCloud) deliberately keep their old compact height
+   instead, since there's no video there to see. */
+#radioPanel .media-embed.media-embed-video { aspect-ratio: 16 / 9; min-height: 0; }
+#radioPanel .media-embed.media-embed-video iframe,
+#radioPanel .media-embed.media-embed-video video { width: 100%; height: 100%; }
+/* object-fit only matters for the real <video> element (an uploaded/
+   linked file) -- its actual aspect ratio rarely matches this box's
+   16:9 exactly, and without this it would stretch/distort to fill it.
+   YouTube/Vimeo/Twitch's own iframe players already letterbox
+   themselves correctly, so this has no effect there either way. */
+#radioPanel .media-embed.media-embed-video video { object-fit: contain; background: #000; }
+
+/* Click-and-drag resizable player -- see initMediaResize() in room.js.
+   The wrap is a stable element that survives track changes (unlike
+   #mediaEmbed's own contents, rebuilt on every buildEmbedForItem()
+   call), so the handle stays put and stays draggable no matter what's
+   currently playing. */
+#radioPanel .media-embed-wrap { position: relative; width: 100%; }
+
+/* Overrides .media-embed-video's aspect-ratio with an explicit height
+   the player's own resize handle sets directly -- used on a stacked
+   mobile layout, where width is already the full screen and height is
+   the only useful thing to drag. Declared AFTER .media-embed-video on
+   purpose: same specificity, so this is the one that wins once both
+   classes are present (i.e. once the visitor has actually resized it),
+   while a never-resized embed still gets the plain aspect-ratio box. */
+#radioPanel .media-embed.media-embed-manual-height {
+  aspect-ratio: auto;
+  min-height: 0;
+  height: var(--media-embed-height, 220px);
+}
+
+/* Only shown for an uploaded/linked video file, in the top-right corner
+   so it doesn't collide with the resize handle in the bottom-right --
+   see buildEmbedForItem() in room.js. Native fullscreen would normally
+   come from the element's own `controls` attribute, but that's turned
+   off now (see the BUG HISTORY comment in buildEmbedForItem for why),
+   so this is the replacement, available to everyone regardless of
+   playback permission -- watching fullscreen doesn't control the room. */
+#radioPanel .media-fullscreen-btn {
+  position: absolute;
+  right: 3px;
+  top: 3px;
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
+  background: rgba(12, 14, 31, 0.85);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 2;
+}
+#radioPanel .media-fullscreen-btn:hover { border-color: var(--accent); color: var(--text); }
+
+#radioPanel .media-resize-handle {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  background: rgba(12, 14, 31, 0.85);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  line-height: 1;
+  cursor: nwse-resize;
+  /* Stops a touch-drag on the handle from also scrolling/panning the
+     page while resizing -- critical on mobile, where this handle is
+     the ONLY way to resize (there's no side column to drag by width). */
+  touch-action: none;
+  user-select: none;
+  z-index: 2;
+}
+#radioPanel .media-resize-handle:hover,
+#radioPanel .media-resize-handle:focus-visible {
+  border-color: var(--accent);
+  color: var(--text);
+  outline: none;
+}
+#radioPanel .media-resize-hint {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 10px;
+  color: var(--text-dim);
+  margin: 6px 0 10px;
+}
+#radioPanel .media-resize-reset-btn {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+#radioPanel .media-playlist-btn { font-size: 11px; padding: 4px 10px; }
+#radioPanel .media-playlist-btn--open { border-color: var(--accent); }
+/* The list opened by the Queue / Playlist button. */
+#radioPanel .media-playlist-panel {
+  max-height: 240px;
+  overflow-y: auto;
+  margin: 0 0 10px;
+  padding: 8px;
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+/* Shown to whoever this room's media_play_permission currently allows
+   to control playback -- see canControlPlayback()'s use in
+   renderNowPlaying() in room.js for who actually sees this. */
+#radioPanel .media-owner-controls { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+#radioPanel .media-ctrl-btn {
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+#radioPanel .media-ctrl-btn:hover { border-color: var(--accent); }
+#radioPanel .media-seek { flex: 1; min-width: 0; accent-color: var(--accent); }
+#radioPanel .media-time { font-size: 11px; color: var(--text-dim); min-width: 36px; text-align: right; }
+#radioPanel .media-time.media-time-wide { min-width: 78px; }
+
+/* Visible to whoever this room's media_add_permission currently allows
+   to add to the queue -- see canAddToQueue() in room.js. */
+#radioPanel .media-add-form { display: flex; gap: 6px; margin-top: 10px; }
+#radioPanel .media-add-form input { flex: 1; min-width: 0; }
+
+#radioPanel .media-upload-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px dashed var(--border);
+  font-size: 12px;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+#radioPanel .media-upload-label:hover { color: var(--text); border-color: var(--accent); }
+#radioPanel .media-upload-status { font-size: 11px; color: var(--text-dim); margin-top: 4px; min-height: 14px; }
+
+/* Peer-to-peer screen sharing -- see startScreenShare()/renderScreenShareUI()
+   in room.js. Same dashed-outline look as .media-upload-label just above,
+   for visual consistency between the two "add something to this box"
+   affordances stacked on top of each other. */
+#radioPanel .media-screen-share-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px dashed var(--border);
+  background: transparent;
+  font-size: 12px;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+#radioPanel .media-screen-share-btn:hover { color: var(--text); border-color: var(--accent); }
+/* While this visitor is the one currently sharing -- a solid, warmer
+   outline so "Stop sharing" reads as a live, active state rather than
+   looking like just another idle button. */
+#radioPanel .media-screen-share-btn.media-screen-share-btn-active {
+  border-style: solid;
+  border-color: #f87171;
+  color: #f87171;
+}
+#radioPanel .media-screen-share-btn.media-screen-share-btn-active:hover { color: #fca5a5; border-color: #fca5a5; }
+#radioPanel .media-screen-share-status { font-size: 11px; color: var(--text-dim); margin-top: 6px; }
+
+#radioPanel .media-queue-heading {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin: 12px 0 6px;
+}
+#radioPanel .media-queue { display: flex; flex-direction: column; gap: 4px; }
+#radioPanel .media-queue-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--bg-panel-2);
+  border: 1px solid transparent;
+}
+/* The item spac3.media_current_item_id points at right now -- see
+   renderQueueList() in room.js, which stays in this same list (rather
+   than moving to some separate "now playing" row) since it's still a
+   real row in spac3_media_queue until it's skipped or ends. */
+#radioPanel .media-queue-item-playable, #radioPanel .media-history-item-playable { cursor: pointer; }
+#radioPanel .media-queue-item-playable:hover, #radioPanel .media-history-item-playable:hover { border-color: var(--accent); }
+#radioPanel .media-queue-item-current { border-color: var(--accent); background: rgba(125, 211, 252, 0.12); }
+#radioPanel .media-queue-item-info { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+#radioPanel .media-queue-item-title { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#radioPanel .media-queue-item-meta { font-size: 10px; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#radioPanel .media-queue-item-actions { display: flex; gap: 4px; flex-shrink: 0; }
+#radioPanel .media-queue-item-actions .media-ctrl-btn { padding: 2px 6px; font-size: 11px; }
+
+/* "Previously played" -- visible to everyone (not owner-gated the way
+   the controls above it are), a muted echo of .media-queue-item/-info/
+   -meta/-actions above so it visually reads as "the same kind of row,
+   past tense" rather than a whole separate widget. */
+#radioPanel .media-history-heading {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin: 12px 0 6px;
+}
+#radioPanel .media-history { display: flex; flex-direction: column; gap: 4px; }
+#radioPanel .media-history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  opacity: 0.8;
+}
+#radioPanel .media-history-item:hover { opacity: 1; }
+#radioPanel .media-history-item-info { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+/* The clickable link to the original media -- see renderHistoryList()
+   in room.js -- styled to still look tappable (underline on hover)
+   without shouting over the rest of this panel's quieter type. */
+#radioPanel .media-history-item-title {
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+  text-decoration: none;
+}
+#radioPanel .media-history-item-title:hover { color: var(--accent); text-decoration: underline; }
+#radioPanel .media-history-item-meta { font-size: 10px; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#radioPanel .media-history-item-actions { display: flex; gap: 4px; flex-shrink: 0; }
+#radioPanel .media-history-item-actions .media-ctrl-btn { padding: 2px 6px; font-size: 11px; }
+
+#chatPanel { flex: 1; min-height: 0; position: relative; }
+.chat-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.chat-header h3 { margin: 0; flex: 1; }
+.chat-privacy-chip {
+  font-size: 11px; color: var(--accent-2);
+  border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px; white-space: nowrap;
+}
+.chat-privacy-chip[hidden] { display: none; }
+.chat-settings-btn {
+  background: var(--bg-panel-2); border: 1px solid var(--border); border-radius: 8px;
+  width: 28px; height: 28px; padding: 0; font-size: 14px; line-height: 1;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.chat-settings-btn:hover, .chat-settings-btn[aria-expanded="true"] { border-color: var(--accent); }
+.chat-settings-pop {
+  position: absolute; z-index: 20; top: 0; left: 8px; right: 8px;
+  background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px;
+  padding: 12px; box-shadow: 0 12px 32px rgba(0,0,0,0.55);
+}
+.chat-settings-pop[hidden] { display: none; }
+.chat-settings-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-dim); margin-bottom: 8px; }
+.chat-settings-option {
+  display: flex; align-items: flex-start; gap: 8px; padding: 8px; border-radius: 8px; cursor: pointer;
+  border: 1px solid transparent;
+}
+.chat-settings-option:hover { background: var(--bg-panel-2); }
+.chat-settings-option:has(input:checked) { border-color: var(--accent); background: var(--bg-panel-2); }
+.chat-settings-option input { margin-top: 3px; flex-shrink: 0; width: auto; }
+.chat-settings-option span { display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+.chat-settings-option small { color: var(--text-dim); font-size: 11px; }
+.chat-settings-note { margin: 8px 0 0; font-size: 11px; line-height: 1.4; color: var(--text-dim); }
+.chat-settings-status { min-height: 14px; margin-top: 6px; font-size: 11px; color: var(--accent); }
+
+/* Expand-arrows grip in a box's bottom-right corner -- phones only (shown by
+   the max-width:700px block below); drag it up/down to change the box's height. */
+.chat-resize-handle {
+  display: none; align-items: center; justify-content: center;
+  height: 22px; margin-top: 4px; cursor: ns-resize; touch-action: none;
+  border-radius: 8px;
+}
+.chat-resize-handle span { display: none; }
+.chat-resize-handle .resize-icon { width: 16px; height: 16px; display: block; color: var(--text-dim); }
+.chat-resize-handle:hover .resize-icon, .chat-resize-handle:focus-visible .resize-icon { color: var(--accent); }
+.panel-minimized .chat-resize-handle { display: none !important; }
+#chatLog {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-right: 4px;
+  margin-bottom: 10px;
+}
+.chat-line { font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; }
+.chat-line .who { font-weight: 600; margin-right: 6px; }
+
+.chat-line .when { color: var(--text-dim); font-size: 10px; margin-left: 6px; white-space: nowrap; }
+.chat-day-divider {
+  position: sticky; top: 0; z-index: 2;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; color: var(--text-dim);
+  padding: 4px 0;
+  background: var(--bg-panel); /* opaque, so messages scroll cleanly underneath */
+}
+.chat-day-divider::before, .chat-day-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+#chatForm { display: flex; gap: 6px; }
+#chatForm input { flex: 1; min-width: 0; }
+
+/* "In this room" -- a pill in the Room box's toolbar (between the "Room"
+   label and the minimize button) that drops its list down over the room. */
+.room-members { position: relative; flex-shrink: 0; }
+.room-members-btn {
+  display: flex; align-items: center; gap: 6px;
+  height: 26px; padding: 0 9px 0 7px;
+  background: var(--bg-panel-2); border: 1px solid var(--border);
+  border-radius: 999px; color: var(--text-dim);
+  font-size: 12px; line-height: 1;
+}
+.room-members-btn:hover, .room-members-btn[aria-expanded="true"] { border-color: var(--accent); color: var(--text); }
+.room-members-btn .rm-icon { font-size: 12px; }
+.rm-avatars { display: flex; align-items: center; }
+.rm-avatars .avatar-badge {
+  width: 18px; height: 18px; font-size: 10px;
+  border: 2px solid var(--bg-panel-2); box-sizing: content-box;
+}
+.rm-avatars .avatar-badge + .avatar-badge { margin-left: -8px; }
+.room-members-pop {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 40;
+  width: 220px; max-width: calc(100vw - 24px); max-height: 50vh; overflow-y: auto;
+  background: var(--bg-panel); border: 1px solid var(--border);
+  border-radius: 12px; padding: 10px 12px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.55);
+}
+.room-members-pop[hidden] { display: none; }
+.room-members-pop h3 { margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-dim); }
+#membersPanel .member-row {
+  display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 4px 0;
+}
+
+.empty-note { color: var(--text-dim); font-size: 13px; }
+
+@media (max-width: 860px) {
+  /* Narrower window: shrink the room stage and tighten both side
+     columns' minimum widths so all three (radio / stage / chat) still
+     fit without crowding. Still honors --media-panel-width (clamped
+     smaller at this width by maxMediaPanelWidth() in room.js, which
+     factors in the real viewport) rather than a plain fixed value, so
+     a manually-resized player stays sized correctly through this
+     breakpoint too. */
+  #roomWrap { grid-template-columns: var(--room-wrap-columns, var(--media-panel-width, 230px) minmax(0, 1fr) minmax(180px, 240px)); padding: 84px 10px 16px; gap: 10px; }
+  #roomStage { min-height: 380px; }
+  .panel { padding: 10px; }
+}
+
+@media (max-width: 700px) {
+  /* Genuinely phone-narrow: there's no room left for three columns, so
+     everything stacks in a single column instead -- the room stage/
+     games first, then SPAC3 RADiO full-width underneath it (not off to
+     the side in a slim column the way it is on wider screens), then
+     Room Chat and the member list below that. #spac3Header still spans
+     the full width (see its grid-column rule above), so it reads as
+     one banner across the top same as on wider screens.
+     IMPORTANT: this 700px breakpoint is duplicated in room.js's
+     updateRadioClearVars() (as RADIO_STACKS_BELOW_QUERY) -- once RADiO
+     is no longer a side column here, there's no horizontal space left
+     to reserve for it, so that function zeroes out --radio-clear-x at
+     this same width instead of measuring the panel's position. Keep
+     both numbers in sync if this breakpoint ever changes. */
+  #roomWrap {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+    min-height: 100vh;
+    gap: 10px;
+  }
+  /* order now lives on .room-panel-wrap (the actual grid item) rather
+     than #roomStage directly, since #roomStage is nested a level deeper
+     inside it now -- see the "workspace boxes" markup. These three
+     order values are only the INITIAL/no-preference-yet defaults;
+     room.js's applyPanelOrderAndState() overrides them with inline
+     style.order the moment it runs, from whichever order the visitor
+     has saved (or DEFAULT_PANEL_ORDER_MOBILE, matching this same
+     room/media/chat sequence, if they never have). */
+  .room-panel-wrap { order: 1; }
+  /* The room's height is a user-resizable value on phones (default 320px)
+     -- see bindStackedHeightResize() in room.js. */
+  .room-panel-wrap #roomStage { flex: none; height: var(--room-stage-height, 320px); min-height: 0; max-height: none; }
+  #radioPanel { order: 2; padding: 8px; max-height: none; }
+  #radioPanel h3 { font-size: 9px; margin-bottom: 4px; }
+  #radioPanel .media-status { font-size: 9px; margin-bottom: 4px; -webkit-line-clamp: 2; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
+  /* Non-video (Spotify/SoundCloud) embeds no longer need to be squeezed
+     down to fit a narrow column now that it's full-width below the
+     stage -- a taller embed here is easier to see/use, not a space
+     problem, so this is roomier than the old side-column height.
+     Actual video embeds are left alone here on purpose -- they already
+     get a proper 16:9 box from .media-embed-video above, which now
+     scales up nicely on a full-width mobile layout too. */
+  #radioPanel .media-embed iframe { height: 140px; }
+  #radioPanel .media-embed.media-embed-video iframe { height: 100%; }
+  #radioPanel .media-add-form { flex-direction: column; }
+  #radioPanel .media-owner-controls { flex-wrap: wrap; }
+  #radioPanel .media-tab-btn { font-size: 10px; padding: 6px 4px; }
+  #sidePanel { order: 3; }
+  /* Chat on a phone: a fixed (user-resizable) message-log height rather than
+     growing with every message -- see bindChatHeightResize() in room.js. */
+  #chatLog { flex: none; height: var(--chat-log-height, 40vh); min-height: 0; }
+  .chat-resize-handle {
+    display: flex; align-self: flex-end; margin-left: auto; flex: 0 0 auto;
+    width: 38px; height: 32px; margin-top: 2px; cursor: nwse-resize;
+    border: 1px solid var(--border); border-radius: 9px; background: rgba(12, 14, 31, 0.85);
+  }
+  .chat-resize-handle:hover, .chat-resize-handle:focus-visible { border-color: var(--accent); outline: none; }
+
+  /* Minimized boxes: instead of each one becoming its own full-width
+     bar of the single column (spread down the whole screen), the three
+     workspace boxes flow in a wrapping row so the minimized ones sit
+     together as small labelled pills in the top-left, right under the
+     header, and an open box takes a full row. room.js's
+     applyPanelOrderAndState() gives minimized boxes a lower `order` so
+     they're all pulled up next to each other, keeping their relative
+     order. */
+  #roomWrap {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    justify-content: flex-start;
+  }
+  #spac3Header { order: -20; flex: 1 0 100%; }
+  #roomWrap .workspace-box { flex: 1 0 100%; }
+  #roomWrap .workspace-box.panel-minimized {
+    flex: 0 0 auto;
+    align-self: flex-start;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 4px 8px;
+    max-height: none;
+  }
+  #roomWrap .workspace-box.panel-minimized .panel-toolbar {
+    flex-direction: row;
+    height: auto;
+    padding: 0;
+    margin: 0;
+    gap: 8px;
+  }
+  #roomWrap .workspace-box.panel-minimized .panel-toolbar-label {
+    writing-mode: horizontal-tb;
+    flex: none;
+    font-size: 11px;
+    min-height: 0;
+  }
+  #roomWrap .workspace-box.panel-minimized .panel-minimize-btn { transform: none; order: 0; }
+  #roomWrap .workspace-box.panel-minimized .panel-toolbar-label { order: 0; }
+}
+
+/* =========================================================
+   Room background customization -- see roomBackground.js and
+   supabase/schema.sql's "Room background customization" section.
+   Purely ambient/decorative: sits behind everything (#stars is
+   z-index 0, #roomWrap is z-index 1 -- this sits at the same level as
+   #stars, painted after it, so it layers on top of the plain
+   starfield without needing to fight #roomWrap for stacking order).
+   ========================================================= */
+#roomAmbiance {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+#roomAmbiance.room-ambiance-active { opacity: 1; }
+
+/* BUG HISTORY / z-index note: the canvas used to have no `position`
+   (so it painted as a plain static in-flow box) while .room-ambiance-
+   image below is `position: absolute`. Those aren't the same stacking
+   layer -- a positioned element paints AFTER a static one within the
+   same stacking context regardless of which comes first in the DOM --
+   so the moment both could be mounted at once (the AI-image mode's
+   "Overlay animated pattern" option), the image would always end up
+   covering the pattern instead of the pattern showing on top of it.
+   Giving the canvas its own position + a higher z-index than the
+   image makes the stacking explicit and correct regardless of DOM
+   order or which one got created/re-created more recently. */
+.room-ambiance-canvas { display: block; width: 100%; height: 100%; position: relative; z-index: 2; }
+
+/* AI-generated image mode: a slow, gentle "Ken Burns" drift instead of
+   a static picture, so it still feels a little alive like the
+   animated patterns do -- capped to a small scale/position range so it
+   never visibly clips content near the edges. Respects reduced-motion
+   the same way roomBackground.js's canvas patterns do (this is CSS-
+   only, so it gets its own matching media query rather than JS
+   checking it). z-index 1 -- see .room-ambiance-canvas's comment above
+   for why this needs to be explicit rather than relying on DOM order,
+   now that the two can be mounted together. */
+.room-ambiance-image {
+  position: absolute;
+  inset: -5%;
+  z-index: 1;
+  background-size: cover;
+  background-position: center;
+  animation: roomAmbianceDrift 60s ease-in-out infinite alternate;
+}
+.room-ambiance-image::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(5, 6, 15, 0.35) 0%, rgba(5, 6, 15, 0.75) 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .room-ambiance-image { animation: none; }
+}
+
+/* Owner-only "🎨" button + its popover panel, living in #spac3Header
+   next to the back-to-globe link (same owner-only-visible pattern as
+   #mediaSettingsBtn, just for the room's background instead of the
+   listening party's permissions). */
+.room-bg-header-actions { position: relative; display: flex; align-items: center; gap: 10px; }
+.room-bg-settings-btn {
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2px 7px;
+  font-size: 13px;
+  line-height: 1.6;
+  cursor: pointer;
+}
+.room-bg-settings-btn:hover { border-color: var(--accent); }
+
+.room-bg-settings-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 280px;
+  z-index: 50;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-panel-2);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+.room-bg-settings-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+.room-bg-settings-row select,
+.room-bg-settings-row textarea {
+  font-size: 12px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-panel);
+  color: var(--text);
+  resize: vertical;
+}
+.room-bg-mode-group {
+  margin: 8px 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.room-bg-color-row { display: flex; gap: 14px; margin-bottom: 8px; }
+.room-bg-color-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.room-bg-color-label input[type="color"] {
+  width: 44px;
+  height: 26px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: none;
+  cursor: pointer;
+}
+.room-bg-shuffle-btn { width: 100%; font-size: 12px; padding: 5px 8px; }
+.room-bg-ai-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.room-bg-ai-preview img {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.room-bg-ai-preview span { overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+.room-bg-ai-note { font-size: 10px; color: var(--text-dim); font-style: italic; margin: 8px 0 0; }
+.room-bg-settings-actions { display: flex; gap: 6px; margin-top: 4px; }
+.room-bg-settings-status { font-size: 11px; color: var(--text-dim); margin-top: 6px; min-height: 14px; }
+
+/* Separates the message control (above) from the room background
+   controls (below) inside the same panel -- two distinct things being
+   edited in one place, per how this panel grew. */
+.danger-btn { color: var(--danger); border-color: rgba(251,113,133,0.4); }
+
+button.danger-fill { background: var(--danger); color: #1a0509; border: none; font-weight: 600; }
+
+.friends-confirm input { width: 100%; margin-top: 10px; box-sizing: border-box; }
+.room-bg-settings-divider { border: none; border-top: 1px solid var(--border); margin: 4px 0 10px; }
+
+.room-message-status { font-size: 11px; color: var(--text-dim); margin: 2px 0 8px; min-height: 14px; }
+
+/* Background/Floor tabs inside the 🎨 panel -- see
+   switchRoomSettingsTab() in room.js. Deliberately its own small set of
+   classes rather than reusing #radioPanel's .media-tab-btn styling,
+   since that's scoped under #radioPanel and wouldn't apply out here
+   anyway. */
+.room-settings-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.room-settings-tab-btn {
+  flex: 1;
+  font-size: 11px;
+  padding: 6px 4px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-panel);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.room-settings-tab-btn--active {
+  color: var(--text);
+  border-color: rgba(125,211,252,0.5);
+  background: rgba(125,211,252,0.12);
+}
+
+@media (max-width: 700px) {
+  /* The panel would otherwise overflow off the left edge of a narrow
+     screen anchored to the button's right edge -- pin it to the
+     header's own left/right bounds instead and let it size down. */
+  .room-bg-settings-panel { width: min(280px, calc(100vw - 36px)); }
+  /* The centered header message, the name, and the 🎨/back-link all
+     compete for space on a phone -- shrink the message rather than let
+     it force the name to truncate harder than it needs to, and cap the
+     editable name input the same way the display name already wraps. */
+  .spac3-message-slot { max-width: 140px; font-size: 12px; }
+}
+
+/* The one resize icon used everywhere in SPAC3 (box grips, the media
+   players' resize handles, the game window's corner grip): a diagonal
+   double-headed arrow, drawn in the current text colour. */
+.resize-icon {
+  width: 1em; height: 1em; flex-shrink: 0;
+  fill: none; stroke: currentColor; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
+  vertical-align: -0.12em;
+}
+.panel-resize-grip .resize-icon { width: 15px; height: 15px; }
+.game-modal-resize-grip .resize-icon { width: 15px; height: 15px; display: block; margin: auto; }
+.media-resize-handle .resize-icon { width: 15px; height: 15px; display: block; margin: auto; }
+.media-resize-hint .resize-icon { width: 12px; height: 12px; }
+
+/* Clickable usernames anywhere in SPAC3 (friends.js userLinkHtml()): click
+   for the same menu as the person's avatar -- add friend, travel with,
+   visit their SPAC3. */
+
+/* Second line under a room's title (the address / coordinates). */
+.spac3-address { margin-top: 1px; }
+
+/* ---------- GLOBE RADIO (index.html) ---------- */
+/* Floating card above the volume pill, bottom-left. Hidden entirely
+   until the admin has queued something (or you ARE the admin). The
+   persistent player/embeds live inside .gr-embed; when the card is
+   collapsed that area is pushed off-screen rather than display:none so
+   embedded players keep playing. */
+.gr {
+  position: fixed;
+  left: 16px;
+  bottom: 68px;
+  z-index: 190;
+  width: min(340px, calc(100vw - 32px));
+  background: rgba(12,14,31,0.92);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  backdrop-filter: blur(6px);
+  color: var(--text);
+  font-size: 13px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 150px);
+}
+.gr[hidden] { display: none; }
+.gr-barrow { display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 12px; }
+.gr-icon { font-size: 20px; }
+.gr.gr-live .gr-icon { animation: gr-pulse 1.6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) { .gr.gr-live .gr-icon { animation: none; } }
+.gr-now { flex: 1; min-width: 0; }
+.gr-label { font-size: 10px; letter-spacing: 0.12em; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gr-admin-tag { color: var(--accent); }
+.gr-title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gr-status { font-size: 11px; color: var(--text-dim); }
+.gr-tune { white-space: nowrap; padding: 6px 12px; border-radius: 999px; font-size: 12px; }
+.gr-toggle { width: 30px; height: 30px; padding: 0; border-radius: 50%; background: transparent; border: none; font-size: 15px; line-height: 1; }
+.gr-toggle:hover { background: var(--bg-panel-2); }
+.gr-body { padding: 0 12px 12px; border-top: 1px solid var(--border); overflow-y: auto; min-height: 0; }
+.gr-body[hidden] { display: none; }
+.gr:not(.gr-open) .gr-embed { position: absolute; left: -9999px; width: 300px; height: 1px; overflow: hidden; }
+.gr-embed { margin: 0; padding: 0 12px; }
+.gr:not(.gr-open) .gr-embed { padding: 0; }
+/* Radio is playing but this person isn't shown the player: keep it in the
+   page (so audio/embeds keep running) but off-screen and untouchable. */
+.gr.gr-stealth { left: -9999px; right: auto; width: 320px; opacity: 0; pointer-events: none; }
+.gr-media-wrap { margin-bottom: 8px; }
+.gr-media-wrap[hidden] { display: none; }
+.gr-media { width: 100%; max-height: 180px; border-radius: 10px; background: #000; }
+.gr-iframe { width: 100%; border: 0; border-radius: 10px; display: block; margin-bottom: 8px; }
+.gr-progress { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+.gr-time { font-size: 11px; color: var(--text-dim); min-width: 72px; font-variant-numeric: tabular-nums; }
+.gr-bar { flex: 1; height: 6px; accent-color: var(--accent); }
+.gr-seek { flex: 1; accent-color: var(--accent); }
+.gr-seek[hidden], .gr-bar[hidden] { display: none; }
+.gr-transport { display: flex; justify-content: center; gap: 10px; margin-bottom: 8px; }
+.gr-transport[hidden] { display: none; }
+.gr-transport button { width: 40px; height: 36px; border-radius: 12px; font-size: 16px; padding: 0; }
+.gr-queue { list-style: none; margin: 0; padding: 0; max-height: 32vh; overflow-y: auto; }
+.gr-q { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-radius: 8px; }
+.gr-q.current { background: var(--bg-panel-2); }
+.gr-q-n { width: 18px; text-align: center; color: var(--text-dim); font-size: 12px; }
+.gr-q.current .gr-q-n { color: var(--accent); }
+.gr-q-title { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.gr-q-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gr-q-meta { font-size: 11px; color: var(--text-dim); }
+.gr-q-empty { color: var(--text-dim); padding: 6px 4px; }
+.gr-q-actions { display: flex; gap: 2px; }
+.gr-q-actions button { width: 26px; height: 26px; padding: 0; font-size: 12px; border-radius: 8px; background: transparent; border: none; }
+.gr-q-actions button:hover:not(:disabled) { background: var(--bg-panel-2); }
+.gr-q-actions button:disabled { opacity: 0.3; cursor: default; }
+.gr-adminbox { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
+.gr-adminbox[hidden] { display: none; }
+.gr-add { display: flex; gap: 6px; }
+.gr-add input { flex: 1; min-width: 0; }
+.gr-upload { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.gr-admin-status { font-size: 11px; color: var(--text-dim); }
+.gr-note { margin: 8px 0 0; font-size: 11px; color: var(--text-dim); line-height: 1.4; }
+.gr-public { display: flex; gap: 10px; align-items: flex-start; margin: 10px 0 0; padding: 8px 10px; border-radius: 10px; background: var(--bg-panel-2); cursor: pointer; line-height: 1.3; }
+.gr-public[hidden] { display: none; }
+.gr-public input { margin-top: 3px; accent-color: var(--accent); flex: none; }
+.gr-public small { color: var(--text-dim); font-size: 11px; }
+@media (max-width: 640px) {
+  /* On phones the radio sits at the very bottom, UNDER the centered hint
+     ("Drag to spin the globe..."), to the right of the collapsed volume
+     button and left of the zoom buttons (which hop up above it while the
+     radio exists, and hide while it is expanded). */
+  .gr { left: 52px; right: 8px; bottom: 10px; width: auto; max-height: calc(100vh - 150px); }
+  .gr-queue { max-height: 24vh; }
+  body.has-globe-radio #globeZoomControls { bottom: 80px; }
+  body.gr-expanded #globeZoomControls { display: none; }
+}
+
+.gr-mode { margin: 10px 0 0; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; display: flex; flex-direction: column; gap: 6px; }
+.gr-mode[hidden] { display: none; }
+.gr-mode legend { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); padding: 0 4px; }
+.gr-mode label { display: flex; gap: 8px; align-items: center; cursor: pointer; line-height: 1.3; }
+.gr-mode input { accent-color: var(--accent); flex: none; }
+.gr-mode small { color: var(--text-dim); font-size: 11px; line-height: 1.35; }
+
+/* ---------- room border (roomBorder.js) ---------- */
+/* Sits on top of the floor/furniture but under avatars (.avatar is
+   z-index 5) and never intercepts clicks, so walking near an edge still
+   works. border-width/border-image-* are set by roomBorder.js. */
+.room-border-frame {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  display: none;
+  box-sizing: border-box;
+  border-style: solid;
+  border-color: transparent;
+}
+.room-border-toggle {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 9;
+  padding: 3px 9px;
+  font-size: 11px;
+  line-height: 1.4;
+  border-radius: 999px;
+  background: rgba(5,6,15,0.7);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  cursor: pointer;
+  opacity: 0.55;
+}
+.room-border-toggle:hover, .room-border-toggle:focus-visible { opacity: 1; }
+.room-border-note { margin: 8px 0 0; font-size: 11px; color: var(--text-dim); line-height: 1.4; }
+
+/* Phones refuse to start sound-on video until a tap: shown over the
+   Live tab's video when play() was blocked (see ensureVideoPlays). */
+.media-tap-to-play {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  padding: 10px 18px;
+  font-size: 15px;
+  border-radius: 999px;
+}
+
+/* Online games: the seat is held while someone's away */
+
+/* The SPAC3 header's logo and globe button: siteHeader.css */
+.topbar-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+@media (max-width: 520px) { .topbar-left { gap: 7px; } }
+
+/* "Your game is waiting" banner (gameResume.js) */
+
+@media (max-width: 440px) {
+  #logo { font-size: 16px; letter-spacing: 0.5px; }
+  .topbar-left { gap: 5px; }
+  #userChip { max-width: 84px; padding-right: 7px; }
+  #authArea { gap: 4px; }
+  #authArea button { padding: 6px 8px; font-size: 12px; }
+  .friends-btn { padding: 6px 7px; font-size: 11px; }
+}
+/* Very narrow phones: the globe button is the way home; the wordmark makes room. */
+@media (max-width: 350px) { a#logo { display: none; } }
+@media (max-width: 375px) {
+  #userChip { padding: 4px; max-width: none; }
+  #userChip span:not(.avatar-badge) { display: none; }
+}
+
+/* =========================================================
+   Half-width boxes on phones + the Sketchpad box.
+   room.js: applyPanelOrderAndState() adds .panel-half (phones only) and
+   moves #sketchPanel between #sketchDock (wide screens) and #roomWrap
+   (phones). Two .panel-half boxes next to each other in the stack share a
+   row; a lone half box simply fills the row, same as a full one.
+   ========================================================= */
+.panel-half-btn {
+  display: none;
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 8px;
+  min-width: 26px; height: 26px; padding: 0 6px;
+  align-items: center; justify-content: center;
+  font-size: 15px; line-height: 1; flex-shrink: 0; cursor: pointer;
+}
+.panel-half-btn:hover, .panel-half-btn:focus-visible { border-color: var(--accent); color: var(--text); }
+.panel-half-btn.is-on { border-color: var(--accent); color: var(--accent); }
+.panel-minimized .panel-half-btn { display: none !important; }
+
+/* Sketchpad on wide screens: a centered box under the three columns. */
+
+/* the icon bar under the page */
+
+/* popup sheets (live on <body> so nothing clips them) */
+
+/* side sliders (fullscreen only) */
+
+/* fullscreen: the box covers the whole screen */
+
+/* A drawing posted to the room chat (room.js: sketchUrlFrom()). */
+.chat-sketch { display: block; margin-top: 4px; }
+.chat-sketch img { display: block; max-width: 100%; max-height: 180px; border-radius: 8px; background: #fff; border: 1px solid var(--border); }
+
+@media (max-width: 700px) {
+  .panel-half-btn { display: flex; }
+
+  #roomWrap #sketchPanel { min-width: 0; }
+
+  /* Half width: two of these share a row (each just under half, minus the
+     10px gap); alone on a row they stretch to fill it. */
+  #roomWrap .workspace-box.panel-half { flex: 1 1 calc(50% - 5px); min-width: 0; padding: 6px; }
+  .panel-half .panel-toolbar { gap: 4px; margin-bottom: 6px; }
+  .panel-half .panel-toolbar-label { font-size: 9px; letter-spacing: 0.4px; }
+  .panel-half .panel-drag-handle, .panel-half .panel-half-btn, .panel-half .panel-minimize-btn,
+  .panel-half .panel-resize-grip { min-width: 22px; height: 22px; padding: 0 3px; font-size: 12px; border-radius: 6px; }
+
+}
+@media (max-width: 700px) {
+  /* Room squeezed to half: shrink the wall icons / GAMES box / member pill so they fit. */
+  .panel-half .game-kiosk { width: 64px; height: 34px; }
+  .panel-half .game-kiosk-label { font-size: 9px; letter-spacing: 1px; -webkit-text-stroke-width: 2px; }
+  .panel-half .stage-hint { font-size: 9px; padding: 3px 6px; max-width: 92%; }
+  .panel-half .room-members-btn .rm-avatars { display: none; }
+  .panel-half .room-members-btn { padding: 2px 6px; }
+  .panel-half #chatForm { flex-direction: column; }
+  .panel-half #chatForm button { width: 100%; }
+  .panel-half #radioPanel .media-tab-btn, .panel-half.workspace-box .media-tab-btn { font-size: 9px; }
+}
+@media (max-width: 700px) {
+  /* Radio at half width: tabs stack instead of overlapping the ? button. */
+  #radioPanel.panel-half .media-tabs-row { flex-wrap: wrap; gap: 6px; }
+  #radioPanel.panel-half .media-tabs { flex-direction: column; flex: 1 1 100%; }
+  #radioPanel.panel-half .media-tab-btn { width: 100%; white-space: normal; }
+  #radioPanel.panel-half .media-help-btn { margin-left: auto; }
+}
+
+/* Phones: the Quadrants / Stack toggle above the boxes. */
+#layoutBar { display: none; }
+@media (max-width: 700px) {
+  #layoutBar { display: flex; order: -19; flex: 1 0 100%; justify-content: flex-end; }
+  #quadBtn { padding: 6px 12px; font-size: 12px; border-radius: 999px; }
+  #quadBtn.is-on { border-color: var(--accent); color: var(--accent); }
+}
+#pillBreak { display: none; }
+@media (max-width: 700px) {
+  /* Keeps minimized pills on their own line(s), above the open boxes, so a
+     half-width box never slides up beside a pill. The negative margin cancels
+     the extra flex gap this zero-height line would otherwise add. */
+  #pillBreak { display: block; order: -5; flex: 1 0 100%; height: 0; margin-top: -10px; }
+}
+
+/* Room pages scroll under the fixed top bar: give it a real backdrop so the
+   room header / boxes never show through the SPAC3 wordmark. */
+body.room-page #topbar {
+  background: linear-gradient(to bottom, rgba(5,6,15,0.98) 0%, rgba(5,6,15,0.96) 75%, rgba(5,6,15,0.82) 100%);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(125,211,252,0.12);
+}
+
+/* Sketchpad height set by hand (phones): the page keeps its 3:2 shape and sits
+   centred on a dark mat instead of being stretched. */
+
+/* Two independent columns (room.js layoutMasonry): children are placed by JS. */
+@media (max-width: 700px) {
+  #roomWrap.wrap-masonry { display: block; position: relative; }
+  #roomWrap.wrap-masonry > * { position: absolute; margin: 0; box-sizing: border-box; }
+  #roomWrap.wrap-masonry > #pillBreak { display: none; }
+  #roomWrap.wrap-masonry > .panel-dragging-source { position: absolute; }
+  #roomWrap.wrap-masonry .workspace-box { flex: none; }
+}
+
+/* =========================================================
+   SPAC3 RADiO pop-out screen -- see mediaFloat.js. The screen's own
+   wrapper switches to position:fixed (it is NOT moved in the DOM, so a
+   playing video / YouTube iframe never reloads), gains a title bar to
+   drag it by and a corner grip (floatBox.js) to resize it. The spot it
+   leaves behind collapses to nothing.
+   ========================================================= */
+#radioPanel .media-dock-slot { display: none; height: 0; }
+#radioPanel .media-dock-slot.is-on { display: block; }
+
+/* once the window has been resized by hand, the screen fills whatever room is left */
+
+#radioPanel .media-resize-hint.is-screen-out > span:first-child { display: none; }
+
+/* Dotted outline that appears over the radio box's screen slot only while
+   a popped-out screen is hovering over the radio box -- letting go while
+   it shows snaps the screen back, letting go without it never does. */
+
+/* ---- Sketchpad: My sketches (save / new drawing / gallery) ---- */
+
+/* While the radio box is being dragged to another slot, a popped-out screen
+   (position:fixed inside it) would be carried along by the box's transform,
+   so it hides until the box is dropped -- the video keeps playing. */
+body.is-moving-radio #radioPanel .media-embed-wrap.is-floating { visibility: hidden; }
+
+/* Right-click / press-and-hold menu on a chat message (delete) */
+
+.chat-line.chat-line-menu-open { background: rgba(248,113,113,0.12); border-radius: 6px; }
+
+/* ---- floatBox.js: bottom strip that also moves a box, pinch resize ---- */
+
+.fb-foot::after { content: ''; position: absolute; left: 50%; bottom: 6px; width: 38px; height: 4px; margin-left: -19px; border-radius: 4px; background: rgba(255,255,255,0.28); }
+
+/* Touch screens: a page can't see fingers that land on a YouTube/Vimeo/... player
+   (the player belongs to that site), so the window gets a solid border down both
+   sides. Two fingers on the title bar, the bottom strip or these borders -- or
+   anywhere on an uploaded video file -- resize it. */
+
+/* =========================================================
+   One continuous workspace: no gaps between the boxes, and every box holds
+   ALL of its own controls (title bar, buttons, resize arrows) inside its own
+   card -- Room and Chat used to keep theirs floating outside the card.
+   ========================================================= */
+#roomWrap { gap: 0; }
+.room-panel-wrap, #sidePanel { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 14px; padding: 14px; }
+#roomStage { border: 0; border-radius: 10px; }
+#sidePanel > .panel-body > #chatPanel { background: none; border: 0; border-radius: 0; padding: 0; }
+#radioPanel { align-self: stretch; max-height: none; }
+/* a minimized box on a wide screen is still just a thin strip */
+.room-panel-wrap.panel-minimized, #sidePanel.panel-minimized { background: none; border-color: transparent; padding-left: 6px; padding-right: 6px; }
+@media (max-width: 860px) { .room-panel-wrap, #sidePanel { padding: 10px; } }
+@media (min-width: 701px) { #roomWrap { padding-bottom: 0; } }
+@media (max-width: 700px) { #pillBreak { margin-top: 0; } }
+
+/* =========================================================
+   Box transparency (user setting, see boxOpacity.js): --box-alpha is 1 for
+   solid boxes and fades toward 0.1. Everything that is "a box" paints its
+   card from --box-bg; the room's own wall / floor layers fade with it
+   (never below a quarter, so the room stays playable).
+   ========================================================= */
+:root { --box-alpha: 1; --box-bg: color-mix(in srgb, var(--bg-panel) calc(var(--box-alpha) * 100%), transparent); }
+.panel, .room-panel-wrap, #sidePanel, #spac3Header { background: var(--box-bg); }
+@media (max-width: 700px) { #roomWrap .workspace-box.panel-minimized { background: var(--box-bg); } }
+.room-floor-texture, .room-floor { opacity: max(var(--box-alpha), 0.25); }
+
+.field input[type="range"] { width: 100%; }
+
+/* ---- My look (🎭) floating panel: personal presets, see looks.js / looksUI.js ---- */
+.looks-panel { position: fixed; z-index: 1300; width: min(340px, calc(100vw - 16px)); max-height: min(80vh, 620px); display: flex; flex-direction: column;
+  background: var(--panel, #14162a); color: inherit; border: 1px solid var(--border, rgba(255,255,255,.18)); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.5); overflow: hidden; }
+.looks-panel[hidden] { display: none; }
+.looks-panel.fb-sized { max-height: none; }
+.looks-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px; cursor: grab; touch-action: none; border-bottom: 1px solid var(--border, rgba(255,255,255,.18)); }
+.looks-head strong { flex: 1; }
+.looks-x { background: none; border: 0; color: inherit; cursor: pointer; font-size: 16px; padding: 2px 6px; }
+.looks-body { padding: 10px 10px 26px; overflow: auto; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.looks-hint { margin: 0; font-size: 12px; opacity: .75; }
+.looks-sub { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; opacity: .8; margin-top: 4px; }
+.looks-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 180px; overflow: auto; }
+.looks-item { position: relative; border: 1px solid var(--border, rgba(255,255,255,.18)); border-radius: 8px; }
+.looks-item.is-on { border-color: var(--accent, #7aa2ff); background: rgba(122,162,255,.14); }
+.looks-pick { display: flex; align-items: center; gap: 8px; width: 100%; background: none; border: 0; color: inherit; cursor: pointer; padding: 8px 10px; text-align: left; font: inherit; }
+.looks-item-name { font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.looks-item-bits { font-size: 11px; opacity: .7; }
+.looks-changed { position: absolute; right: 8px; top: -8px; font-size: 10px; background: var(--accent, #7aa2ff); color: #000; border-radius: 8px; padding: 1px 6px; }
+.looks-empty { font-size: 12px; opacity: .7; padding: 6px; }
+.looks-name { width: 100%; box-sizing: border-box; }
+.looks-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.looks-act { cursor: pointer; border: 1px solid var(--border, rgba(255,255,255,.25)); background: rgba(255,255,255,.06); color: inherit; border-radius: 8px; padding: 5px 9px; font: inherit; font-size: 13px; }
+.looks-act:disabled { opacity: .4; cursor: default; }
+.looks-act.primary { border-color: var(--accent, #7aa2ff); }
+.looks-delete.is-armed { background: #7a1f1f; border-color: #c44; }
+.looks-part { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 4px 0; border-top: 1px solid rgba(255,255,255,.08); }
+.looks-part-name { font-weight: 600; font-size: 13px; }
+.looks-part-state { font-size: 12px; opacity: .7; flex: 1; }
+.looks-part.is-set .looks-part-state { opacity: 1; color: var(--accent, #7aa2ff); }
+.looks-slider { width: 100%; }
+.looks-reset { align-self: flex-start; }
+.looks-body > * { flex-shrink: 0; }
+.looks-item { display: flex; align-items: center; }
+.looks-item .looks-pick { flex: 1; min-width: 0; }
+.looks-edit { flex: none; background: none; border: 0; color: inherit; opacity: .75; cursor: pointer; font: inherit; font-size: 12px; padding: 8px 10px; }
+.looks-edit:hover { opacity: 1; text-decoration: underline; }
+.looks-renaming { padding: 4px 6px; display: block; }
+.looks-rename-input { width: 100%; }
+.looks-changed { z-index: 1; }
+
+/* Radio minimized while its screen is popped out: the body collapses to nothing and goes
+   invisible, but is NOT display:none, so the floating screen (a child of it) keeps showing,
+   playing and can still be moved/resized. */
+.panel-minimized.has-floating-screen .panel-body {
+  display: block !important;
+  height: 0 !important; min-height: 0 !important; max-height: 0 !important;
+  padding: 0 !important; margin: 0 !important; border: 0 !important;
+  overflow: visible !important; visibility: hidden;
+  flex: 0 0 0 !important;
+}
+.panel-minimized.has-floating-screen .media-embed-wrap.is-floating,
+.panel-minimized.has-floating-screen .media-embed-wrap.is-floating * { visibility: visible; }
+.panel-minimized.has-floating-screen .media-embed-wrap.is-floating .media-fullscreen-btn[hidden] { display: none; }
+
+/* Sketchpad full screen (z-index 7000): keep a popped-out radio screen on top of it so it can
+   still be watched / moved while drawing. */
+html.sketch-full-open #radioPanel .media-embed-wrap.is-floating { z-index: 7400; }
+/* A popped-out radio screen must be able to sit above the sketchpad (see mediaFloat.js):
+   while one is out, #roomWrap stops being a stacking context so the screen's own z-index counts. */
+html.radio-screen-out #roomWrap { z-index: auto; }
+
+/* ---- space-themed transport controls in the title bar of the popped-out radio screen
+   (mediaFloat.js), next to "Back to player": a glowing planet-and-orbit play/pause button
+   between two warp-jump skip buttons, on a little starfield ---- */
+
+#radioPanel .media-float-bar { display: none; }
+#radioPanel .media-embed-wrap.is-floating .media-float-bar {
+  position: relative; display: flex; align-items: center; justify-content: center; gap: 9px; flex: 0 0 auto;
+  padding: 3px 12px; margin: 0 2px; border-radius: 999px; box-sizing: border-box;
+  background:
+    radial-gradient(1.1px 1.1px at 10% 32%, #fff 60%, transparent 62%),
+    radial-gradient(1px 1px at 24% 76%, #cfe6ff 60%, transparent 62%),
+    radial-gradient(1.2px 1.2px at 44% 20%, #fff 60%, transparent 62%),
+    radial-gradient(1px 1px at 58% 80%, #e7d9ff 60%, transparent 62%),
+    radial-gradient(1.2px 1.2px at 76% 26%, #fff 60%, transparent 62%),
+    radial-gradient(1px 1px at 92% 70%, #cfe6ff 60%, transparent 62%),
+    linear-gradient(180deg, #0b1030 0%, #1a1450 100%);
+  border: 1px solid rgba(140, 170, 255, 0.35);
+  box-shadow: inset 0 0 8px rgba(100, 120, 255, 0.25);
+}
+#radioPanel .media-embed-wrap.is-floating .media-float-bar.is-unavailable > .mfb-orb,
+#radioPanel .media-embed-wrap.is-floating .media-float-bar.is-unavailable > .mfb-btn:not(.media-float-find-btn) { display: none; }
+.mfb-btn, .mfb-orb { -webkit-tap-highlight-color: transparent; cursor: pointer; font: inherit; color: #dfe8ff; }
+.mfb-btn {
+  position: relative; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; padding: 0;
+  background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.22), rgba(120,140,255,0.10) 55%, rgba(10,14,50,0.6));
+  border: 1px solid rgba(150, 180, 255, 0.55);
+  box-shadow: 0 0 8px rgba(110, 150, 255, 0.35), inset 0 0 6px rgba(120, 160, 255, 0.25);
+  transition: transform .15s ease, box-shadow .2s ease, color .2s ease;
+}
+.mfb-btn svg { width: 14px; height: 14px; }
+.mfb-btn:hover:not(:disabled) { color: #fff; transform: scale(1.12); box-shadow: 0 0 14px rgba(150, 190, 255, 0.8), inset 0 0 8px rgba(150, 190, 255, 0.4); }
+.mfb-prev:hover:not(:disabled) svg { animation: mfb-warp-l .5s ease; }
+.mfb-next:hover:not(:disabled) svg { animation: mfb-warp-r .5s ease; }
+.mfb-orb {
+  position: relative; width: 34px; height: 34px; border-radius: 50%; padding: 0; display: grid; place-items: center; color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: radial-gradient(circle at 32% 28%, #ffffff 0, #b9d4ff 14%, #7a7dff 42%, #4b2fb8 74%, #1c1260 100%);
+  box-shadow: 0 0 12px rgba(130, 120, 255, 0.75), 0 0 24px rgba(90, 60, 220, 0.45), inset -3px -4px 7px rgba(10, 5, 60, 0.55);
+  transition: transform .15s ease, box-shadow .25s ease;
+}
+.mfb-orb:hover:not(:disabled) { transform: scale(1.08); }
+.mfb-orb svg { width: 16px; height: 16px; }
+.mfb-orb .mfb-ring {
+  position: absolute; inset: -5px -10px; border-radius: 50%; pointer-events: none;
+  border: 1.6px solid rgba(190, 215, 255, 0.6); border-left-color: transparent; border-bottom-color: rgba(190, 215, 255, 0.15);
+  transform: rotate(-24deg) scaleY(0.34);
+  box-shadow: 0 0 6px rgba(160, 200, 255, 0.4);
+}
+.mfb-orb .mfb-glyph { position: absolute; display: grid; place-items: center; filter: drop-shadow(0 1px 2px rgba(20, 10, 80, 0.7)); }
+.mfb-orb .mfb-pause { display: none; }
+.media-float-bar.is-playing .mfb-orb .mfb-play { display: none; }
+.media-float-bar.is-playing .mfb-orb .mfb-pause { display: grid; }
+.mfb-orb .mfb-play { margin-left: 2px; }
+.media-float-bar.is-playing .mfb-orb { animation: mfb-pulse 2.4s ease-in-out infinite; }
+.media-float-bar.is-playing .mfb-ring { animation: mfb-orbit 6s linear infinite; }
+.mfb-btn:disabled, .mfb-orb:disabled { opacity: .38; cursor: default; filter: grayscale(.6); }
+.mfb-btn.is-pressed, .mfb-orb.is-pressed { animation: mfb-press .35s ease; }
+.mfb-btn:focus-visible, .mfb-orb:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .media-float-bar.is-playing .mfb-orb, .media-float-bar.is-playing .mfb-ring, .mfb-btn svg, .mfb-btn.is-pressed, .mfb-orb.is-pressed { animation: none !important; }
+}
+
+/* ---- 🔍 "Search YouTube" on the popped-out screen: a button in the banner opens a small panel over
+   the screen (search opens YouTube in a new tab; paste the link you copied to add it) ---- */
+#radioPanel .media-float-find-btn { display: none; }
+#radioPanel .media-embed-wrap.is-floating .media-float-find-btn {
+  display: grid; place-items: center; flex: 0 0 auto; width: 28px; height: 28px; padding: 0; font-size: 14px; border-radius: 50%; cursor: pointer;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(150,180,255,0.45); color: #fff;
+}
+#radioPanel .media-float-find-btn:hover, #radioPanel .media-float-find-btn.is-on { border-color: #fff; background: rgba(124,92,255,0.45); }
+.media-float-find .mff-title { font-weight: 700; font-size: 14px; }
+.media-float-find .mff-row { display: flex; gap: 6px; align-items: stretch; margin: 0; }
+.media-float-find input { flex: 1 1 0; min-width: 0; padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(150,180,255,0.4); background: rgba(8,10,40,0.7); color: #fff; font: inherit; font-size: 13px; }
+.media-float-find input:disabled { opacity: .5; }
+.media-float-find button { flex: 0 0 auto; padding: 8px 12px; border-radius: 8px; cursor: pointer; font: inherit; font-size: 13px; color: #fff; border: 1px solid rgba(150,180,255,0.5); background: rgba(124,92,255,0.35); }
+.media-float-find button:hover:not(:disabled) { background: rgba(124,92,255,0.65); }
+.media-float-find button:disabled { opacity: .45; cursor: default; }
+.media-float-find .mff-hint { margin: 0; font-size: 12px; opacity: .8; }
+.media-float-find .mff-status { min-height: 16px; font-size: 12px; color: #9be7c4; }
+.media-float-find .mff-status.is-bad { color: #ffb4b4; }
+
+/* Account dialogs (sign in / sign up / "Customize your avatar") cover the whole window. The default
+   backdrop keeps the radio and chat columns clear for game popups, which squeezed these into a
+   sliver whenever those columns were wide or the window was narrow. */
+.modal-backdrop.modal-backdrop--full { left: 0; right: 0; }
+.modal.avatar-modal { min-width: min(300px, 94vw); box-sizing: border-box; }
+/* keep Cancel / Save in view while the long avatar picker scrolls */
+
+.panel-minimize-btn .expand-corners-icon { display: block; margin: auto; pointer-events: none; }
+.panel-minimized .panel-minimize-btn { transform: none; }
+
+/* ---- game windows: personal transparency slider (room.js: addGameTransparencySlider) ---- */
+/* (transparency now fades only the window's backgrounds -- see "game window transparency" at the end of this file) */
+.game-alpha { display: inline-flex; align-items: center; gap: 4px; margin: 0 8px 0 auto; font-size: 13px; color: var(--text-dim); cursor: default; }
+.game-alpha input[type=range] { width: 72px; min-width: 0; touch-action: pan-y; }
+@media (max-width: 420px) { .game-alpha input[type=range] { width: 52px; } }
+
+/* ---- the creator's picture for blank radio screens (audio files / nothing playing) ---- */
+#radioPanel.has-screen-image .media-embed-audio,
+#radioPanel.has-screen-image .media-embed:empty {
+  background: #000 var(--media-screen-image) center / cover no-repeat;
+  aspect-ratio: 16 / 9;
+}
+#radioPanel.has-screen-image .media-embed-audio.media-embed-manual-height,
+#radioPanel.has-screen-image .media-embed:empty.media-embed-manual-height { aspect-ratio: auto; }
+#radioPanel.has-screen-image .media-embed-audio audio { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.room-screen-image-ctl { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.room-screen-image-ctl img { width: 64px; height: 36px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
+.room-screen-image-pick { cursor: pointer; padding: 5px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
+.room-screen-image-pick:hover { border-color: var(--accent); }
+
+/* ---- a box that is the only one open can be sized: corner arrows at its bottom-right ---- */
+.lone-resize-handle { display: none; }
+.workspace-box.is-lone-box > .lone-resize-handle:not([hidden]) {
+  display: grid; place-items: center; position: absolute; right: 6px; bottom: 6px; z-index: 6;
+  width: 30px; height: 30px; padding: 0; border-radius: 8px; cursor: nwse-resize; touch-action: none; color: var(--text-dim);
+  background: var(--bg-panel-2, rgba(20,22,44,0.9)); border: 1px solid var(--border);
+}
+.workspace-box.is-lone-box > .lone-resize-handle:hover { color: var(--text); border-color: var(--accent); }
+@media (min-width: 701px) {
+  .workspace-box.lone-sized-h { align-self: start; height: var(--lone-h) !important; max-height: none !important; }
+}
+@media (min-width: 701px) {
+  .room-panel-wrap.lone-sized-h #roomStage { min-height: 0; flex: 1 1 0; }
+  #sidePanel.lone-sized-h > .panel-body, #radioPanel.lone-sized-h > .panel-body { min-height: 0; overflow-y: auto; }
+}
+
+/* ---- Offline Sketchpad page (sketch.html) ---- */
+
+/* a Send-to-chat picture is waiting for a connection */
+
+/* =========================================================
+   FREE LAYOUT (computers, see freeLayout.js): every box floats on its own.
+   Drag by the header bar, resize from the corner buttons, boxes may overlap.
+   ========================================================= */
+.free-corner, .reset-layout-btn { display: none; }
+@media (min-width: 701px) {
+  html.free-layout .reset-layout-btn { display: inline-flex; align-items: center; gap: 4px; width: auto; padding: 0 10px; font-size: 12px; white-space: nowrap; }
+  html.free-layout body.room-page { overflow-x: hidden; }
+  html.free-layout #roomWrap.wrap-free {
+    display: block; position: relative; max-width: none; margin: 0; padding: 0;
+    height: var(--free-h, 100vh); min-height: 100vh;
+  }
+  html.free-layout #roomWrap.wrap-free > #spac3Header { position: absolute; left: 18px; right: 18px; top: 84px; margin: 0; z-index: 2; }
+  html.free-layout #roomWrap.wrap-free > #layoutBar, html.free-layout #roomWrap.wrap-free > #pillBreak { display: none; }
+  html.free-layout #roomWrap.wrap-free > .workspace-box.free-box {
+    position: absolute; margin: 0; box-sizing: border-box; flex: none; order: 0 !important;
+    min-width: 0; max-width: none; max-height: none; align-self: auto;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.42);
+    z-index: 20;
+  }
+  html.free-layout #roomWrap.wrap-free > .workspace-box.free-box.free-dragging { cursor: grabbing; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55); }
+  html.free-layout #sketchPanel.sketch-full { z-index: 7000 !important; }
+  /* the whole header bar moves the box */
+  html.free-layout .free-box > .panel-toolbar { cursor: grab; margin-inline: 10px; user-select: none; -webkit-user-select: none; }
+  html.free-layout .free-box > .panel-toolbar button, html.free-layout .free-box > .panel-toolbar a { cursor: pointer; }
+  html.free-layout .free-box.free-dragging > .panel-toolbar { cursor: grabbing; }
+  html.free-layout .free-box .panel-resize-grip,
+  html.free-layout .free-box .lone-resize-handle,
+  html.free-layout .free-box > .box-resize-handle { display: none !important; }
+  /* the contents follow whatever size the box is given */
+  html.free-layout .free-box { display: flex; flex-direction: column; }
+  html.free-layout .room-panel-wrap.free-box #roomStage { min-height: 0; flex: 1 1 0; }
+  html.free-layout #sidePanel.free-box > .panel-body, html.free-layout #radioPanel.free-box > .panel-body,
+  html.free-layout #sketchPanel.free-box > .panel-body { min-height: 0; overflow-y: auto; flex: 1 1 auto; }
+  /* four corner buttons, tucked inside the box */
+  html.free-layout .free-box > .free-corner {
+    display: grid; place-items: center; position: absolute; z-index: 8; width: 16px; height: 16px; padding: 0;
+    border-radius: 5px; color: var(--text-dim); background: rgba(20, 22, 44, 0.55); border: 1px solid transparent;
+    opacity: 0.55; touch-action: none; line-height: 0;
+  }
+  html.free-layout .free-box > .free-corner:hover, html.free-layout .free-box > .free-corner:focus-visible,
+  html.free-layout .free-box.free-resizing > .free-corner { opacity: 1; color: var(--text); border-color: var(--accent); }
+  html.free-layout .free-box > .free-corner-tl { left: 3px; top: 3px; }
+  html.free-layout .free-box > .free-corner-tr { right: 3px; top: 3px; }
+  html.free-layout .free-box > .free-corner-bl { left: 3px; bottom: 3px; }
+  html.free-layout .free-box > .free-corner-br { right: 3px; bottom: 3px; }
+  html.free-layout .free-box.panel-minimized > .free-corner { display: none; }
+  /* minimized: a small bar with just the header */
+  html.free-layout #roomWrap.wrap-free > .workspace-box.free-box.panel-minimized {
+    width: 220px !important; height: auto !important; min-height: 0; padding: 6px 12px; background: var(--box-bg, var(--bg-panel)); border: 1px solid var(--border);
+  }
+  html.free-layout .free-box.panel-minimized > .panel-toolbar { flex-direction: row; height: auto; padding: 0; margin: 0; gap: 8px; cursor: grab; }
+  html.free-layout .free-box.panel-minimized > .panel-toolbar .panel-toolbar-label { writing-mode: horizontal-tb; flex: 1; font-size: 11px; min-height: 0; }
+  html.free-layout .free-box.panel-minimized { overflow: visible; }
+  html.free-layout .free-box.panel-minimized > *:not(.panel-toolbar):not(.panel-body) { display: none !important; }
+  /* the dotted "it would click here" outline */
+  .free-snap-preview {
+    position: absolute; z-index: 15; pointer-events: none; box-sizing: border-box; border-radius: 14px;
+    border: 2px dashed var(--accent); background: rgba(124, 92, 255, 0.10);
+    animation: free-snap-in 140ms ease-out;
+  }
+
+}
+@media (prefers-reduced-motion: reduce) { .free-snap-preview { animation: none; } }
+/* a popped-out radio screen must sit above every box (and the full-screen sketchpad), so the
+   radio box may not trap it inside its own stacking order while the screen is out */
+@media (min-width: 701px) { html.free-layout.radio-screen-out #roomWrap.wrap-free > #radioPanel.free-box { z-index: auto !important; } }
+
+/* the banner's drop-down settings panel must sit above the floating boxes while it is open */
+@media (min-width: 701px) { html.free-layout #roomWrap.wrap-free > #spac3Header:has(#roomBgSettingsPanel[style*="block"]) { z-index: 3000; } }
+
+/* ---- drag any edge of a floating box to resize it (floatBox.js) ---- */
+
+/* ---- free layout: edge strips + footer move strip on every main box ---- */
+@media (min-width: 701px) {
+  html.free-layout .free-box > .free-edge { display: block; position: absolute; z-index: 7; touch-action: none; }
+  html.free-layout .free-box > .free-edge-n { left: 22px; right: 22px; top: 0; height: 7px; }
+  html.free-layout .free-box > .free-edge-s { left: 22px; right: 22px; bottom: 0; height: 7px; }
+  html.free-layout .free-box > .free-edge-w { top: 22px; bottom: 22px; left: 0; width: 7px; }
+  html.free-layout .free-box > .free-edge-e { top: 22px; bottom: 22px; right: 0; width: 7px; }
+  html.free-layout .free-box > .free-edge:hover, html.free-layout .free-box.free-resizing > .free-edge { background: rgba(124, 92, 255, 0.28); }
+  html.free-layout .free-box > .free-foot { display: block; position: absolute; z-index: 6; left: 22px; right: 22px; bottom: 7px; height: 9px; cursor: grab; touch-action: none; }
+  html.free-layout .free-box > .free-foot::after { content: ''; position: absolute; left: 50%; bottom: 2px; width: 38px; height: 3px; margin-left: -19px; border-radius: 3px; background: rgba(255, 255, 255, 0.22); }
+  html.free-layout .free-box > .free-foot:hover::after { background: rgba(255, 255, 255, 0.5); }
+  html.free-layout .free-box.free-dragging > .free-foot { cursor: grabbing; }
+  html.free-layout .free-box.panel-minimized > .free-edge, html.free-layout .free-box.panel-minimized > .free-foot { display: none !important; }
+}
+.free-edge, .free-foot { display: none; }
+
+/* ---- floating game windows: edge handles + footer move strip (room.js addGameEdges) ---- */
+
+body.dragging-game-modal .game-edge, body.dragging-game-modal .game-foot { pointer-events: none; }
+
+/* ---- the 🎨 room settings panel is a floating, resizable box ---- */
+.room-bg-settings-panel { position: fixed; top: 100px; right: auto; left: auto; z-index: 1300; width: min(300px, calc(100vw - 16px)); max-height: min(82vh, 760px); flex-direction: column; padding: 0; overflow: hidden; }
+.room-bg-settings-panel.fb-sized { max-height: none; }
+.room-bg-settings-head { display: flex; align-items: center; gap: 8px; padding: 8px 12px; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; border-bottom: 1px solid var(--border); flex: 0 0 auto; }
+.room-bg-settings-head strong { flex: 1; font-size: 13px; }
+.room-bg-settings-head.is-dragging { cursor: grabbing; }
+.room-bg-settings-x { background: none; border: 0; color: inherit; cursor: pointer; font-size: 16px; padding: 2px 6px; }
+.room-bg-settings-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 12px 12px 22px; }
+html.free-layout #roomWrap.wrap-free > #spac3Header:has(#roomBgSettingsPanel[style*="flex"]) { z-index: 3000; }
+
+/* ---- invites + travel parties ---- */
+.friends-row-actions { flex-wrap: wrap; justify-content: flex-end; }
+
+.friends-row-actions { flex-shrink: 1; min-width: 0; }
+.friends-row-name { flex: 1 1 56px; }
+.friends-panel { overflow-x: hidden; }
+
+.friends-row-actions button.needs-room, .friends-invite-all.needs-room { opacity: 0.55; }
+
+/* =========================================================
+   ROOM TOP BAR: SPAC3 + globe + room name on the left, the room's message
+   in the middle, the settings cogwheel next to the profile on the right.
+   ========================================================= */
+body.room-page #topbar { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 12px; }
+body.room-page .topbar-left { justify-self: start; max-width: 100%; display: flex; align-items: center; gap: 14px; }
+/* Computers: SPAC3, the globe and the room's name + star share one row; the owner and address sit under the name, smaller. */
+@media (min-width: 701px) {
+  body.room-page .topbar-left { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 14px; row-gap: 0; align-items: center; }
+  body.room-page .topbar-left .topbar-brand { grid-column: 1; grid-row: 1; }
+  body.room-page .topbar-left .spac3-name-block { display: contents; }
+  body.room-page .topbar-left .spac3-name-display { grid-column: 2; grid-row: 1; align-self: center; min-width: 0; }
+  body.room-page .topbar-left .sub { grid-column: 2; grid-row: 2; margin: -2px 0 0; min-width: 0; }
+}
+.topbar-brand { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+body.room-page #topbar { padding-top: 8px; padding-bottom: 8px; }
+.topbar-left .spac3-name-block { min-width: 0; }
+.topbar-left h1 { font-size: 18px; margin: 0; line-height: 1.2; }
+.topbar-left .sub { color: var(--text-dim); font-size: 10.5px; line-height: 1.25; margin-top: 1px; }
+.topbar-left .sub .spac3-address { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.topbar-left .spac3-name-display { max-width: 100%; }
+body.room-page #roomWrap { padding-top: calc(var(--topbar-h, 72px) + 20px); }
+body.room-page .topbar-right { justify-self: end; display: flex; align-items: center; gap: 10px; min-width: 0; }
+.topbar-center { justify-self: center; min-width: 0; max-width: 100%; }
+.topbar-center .spac3-message-slot { max-width: 34vw; }
+.room-cog-wrap { position: relative; flex: 0 0 auto; }
+.room-cog-btn {
+  width: 36px; height: 36px; padding: 0; border-radius: 50%; font-size: 18px; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--bg-panel-2); border: 1px solid var(--border); cursor: pointer;
+}
+.room-cog-btn:hover, .room-cog-btn[aria-expanded="true"] { border-color: var(--accent); }
+.room-cog-menu {
+  position: absolute; top: calc(100% + 8px); right: 0; min-width: 190px; z-index: 60;
+  display: flex; flex-direction: column; gap: 2px; padding: 6px;
+  background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.55);
+}
+.room-cog-menu[hidden] { display: none; }
+.room-cog-menu .room-cog-item {
+  display: flex; align-items: center; gap: 6px; width: 100%; text-align: left;
+  padding: 8px 10px; font-size: 13px; border-radius: 8px; line-height: 1.3;
+  background: transparent; border: 1px solid transparent; cursor: pointer; white-space: nowrap;
+}
+.room-cog-menu .room-cog-item:hover, .room-cog-menu .room-cog-item:focus-visible { background: rgba(255,255,255,0.08); }
+.room-cog-menu .reset-layout-btn { display: none; }
+@media (min-width: 701px) { html.free-layout .room-cog-menu .reset-layout-btn { display: flex; width: 100%; padding: 8px 10px; font-size: 13px; } }
+@media (max-width: 700px) {
+  body.room-page .topbar-center { display: none; }
+}
+@media (max-width: 440px) { .room-cog-btn { width: 30px; height: 30px; font-size: 15px; } body.room-page .topbar-right { gap: 5px; } }
+/* The cog menu stays on top of the floating My look / settings panels. */
+body.room-page #topbar:has(.room-cog-menu:not([hidden])) { z-index: 1400; }
+@media (max-width: 700px) {
+  /* brand + profile buttons on the first row, the room's name / star / owner / address under them */
+  body.room-page #topbar {
+    display: grid; gap: 4px 8px; align-items: center;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "brand right" "name name";
+  }
+  body.room-page .topbar-left { display: contents; }
+  body.room-page .topbar-brand { grid-area: brand; min-width: 0; }
+  body.room-page .topbar-left .spac3-name-block { grid-area: name; }
+  body.room-page .topbar-right { grid-area: right; flex: 0 0 auto; }
+  #spac3MessageBar { display: flex; justify-content: center; }
+}
+@media (max-width: 440px) {
+  body.room-page #userChip { max-width: 58px; }
+  .room-cog-btn { width: 28px; height: 28px; font-size: 14px; }
+}
+
+#spac3MessageBar { display: none; }
+@media (max-width: 700px) { #spac3MessageBar { display: flex; justify-content: center; padding: 0 4px; } #spac3MessageBar .spac3-message-slot { max-width: 100%; } }
+@media (max-width: 700px) { #spac3MessageBar { flex: 1 0 100%; order: -20; } }
+
+/* The owner's settings panel now lives at the top level of the page (not inside the old header box). Keep it above the boxes but below dialogs and the top bar. */
+body.room-page > .room-bg-settings-panel { z-index: 25; }
+
+/* =========================================================
+   GAME WINDOW TRANSPARENCY
+   The slider in a game window's title bar (--game-t, 0-100) fades only the BACKGROUNDS:
+   the window panel, its border and shadow, the board squares' fill and the Connect 4 frame.
+   What you need to play stays fully solid at every setting: the Close button and the slider,
+   the title and status text, the board's lines (the # of tic-tac-toe, the grid of chess and
+   checkers, the Connect 4 holes), the hover / selected / legal-move highlights, and every
+   piece (X, O, discs, chess pieces, checkers, cards).
+   ========================================================= */
+.modal.game-modal {
+  --ga-pct: calc((1 - var(--game-t, 0) / 100) * 100%);
+  --game-line: rgba(190, 205, 255, 0.85);
+  --game-hl: rgba(125, 211, 252, 0.30);
+  background: color-mix(in srgb, var(--bg-panel) var(--ga-pct), transparent);
+  border-color: color-mix(in srgb, var(--border) var(--ga-pct), transparent);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, calc(0.65 * (1 - var(--game-t, 0) / 100)));
+}
+
+/* readable on any background */
+
+/* Close / Leave and the slider keep their own solid look */
+.game-modal-header button { background: var(--bg-panel-2); border-color: var(--border); }
+.game-alpha { text-shadow: 0 0 4px rgba(0,0,0,0.9); }
+.game-alpha input[type=range] { opacity: 1; }
+
+/* disabled squares/cells must not dim the pieces on them */
+
+/* ---- Tic-Tac-Toe: a real # ---- */
+.ttt-board { gap: 0; max-width: 240px; --ttt-line: 5px; }
+.ttt-cell {
+  background: transparent; border: 0; border-radius: 0; padding: 0;
+  font-size: 44px; font-weight: 800; line-height: 1;
+  text-shadow: 0 0 6px rgba(0,0,0,0.7);
+  transition: background .12s ease;
+}
+
+.ttt-cell.win { background: rgba(74, 222, 128, 0.28); border-color: var(--game-line); box-shadow: none; }
+.ttt-cell.x { color: var(--accent); }
+.ttt-cell.o { color: var(--accent-2); }
+
+/* ---- Connect 4 ---- */
+.c4-grid { background: color-mix(in srgb, #0c1b3a var(--ga-pct), transparent); }
+.c4-dot { border: 2px solid var(--game-line); box-sizing: border-box; background: rgba(255,255,255,0.06); }
+.c4-dot.red { background: #fb7185; }
+.c4-dot.yellow { background: #facc15; }
+
+.c4-col-btn { background: color-mix(in srgb, var(--bg-panel-2) var(--ga-pct), transparent); border-color: var(--game-line); }
+
+/* ---- Chess + Checkers: the grid lines stay, the square fill fades ---- */
+
+.chess-sq { font-size: 30px; }
+
+/* ---- Mini Space Crafts menus ---- */
+
+.checkers-piece-b { box-shadow: 0 0 0 1.5px rgba(200, 210, 255, 0.5), 0 2px 4px rgba(0,0,0,0.5), inset 0 -3px 4px rgba(0,0,0,0.3), inset 0 2px 3px rgba(255,255,255,0.3); }
+/* boxes that a slam to a screen edge would nudge: a fainter outline than the dragged box's own */
+.free-snap-preview.free-snap-nudge { opacity: 0.6; border-style: dashed; }
+
+/* ---------- "send sketch to chat" pop-up (sketchUI.js) ---------- */
+.modal-backdrop.dialog-backdrop { z-index: 7800; left: 0; right: 0; } /* above the full-screen sketchpad (7000) and the radio/volume lifted over it (7400/7500) */
+.modal.dialog-modal { width: min(420px, 94vw); max-height: 92vh; overflow-y: auto; }
+
+.modal-backdrop.addr-backdrop { z-index: 1600; }
+
+/* six-dot handle as a snapping / free toggle (freeLayout.js) */
+.free-box .panel-drag-handle.is-snap { color: var(--accent); border-color: var(--accent); }
+.free-box .panel-drag-handle.is-free { color: var(--text-dim); border-style: dashed; opacity: 0.75; }
+html.free-layout .free-box.free-hold-go { cursor: grabbing; box-shadow: 0 0 0 2px var(--accent), 0 16px 40px rgba(0, 0, 0, 0.55); }
+html.free-layout .free-box.free-hold-go > .panel-toolbar, html.free-layout .free-box.free-hold-go > .panel-toolbar * { cursor: grabbing; }
+
+/* ---------- inviting people in the room to a waiting game (room.js) ---------- */
+
+.game-invite-chip .avatar-badge { width: 22px; height: 22px; font-size: 13px; }
+
+/* ---------- spectating, play-the-winner, and the line between two players ---------- */
+
+.game-link .gl-glow { fill: none; stroke: var(--gl); stroke-width: 6; stroke-linecap: round; opacity: 0.12; filter: blur(3px); }
+.game-link .gl-flow { fill: none; stroke: var(--gl); stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 2 9; opacity: 0.8; animation: gl-flow 1.4s linear infinite; }
+
+.gl-spark { position: absolute; left: 0; top: 0; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%; background: var(--gl); box-shadow: 0 0 8px 2px var(--gl); pointer-events: none; z-index: 4; offset-rotate: 0deg; animation: gl-spark 3.2s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) { .game-link .gl-flow, .gl-spark, .game-link-badge { animation: none; } .gl-spark { display: none; } }
+
+/* =========================================================
+   FIT ANY WINDOW WIDTH (computers): the boxes are squeezed side by side, so
+   their insides tighten too (freeLayout.js sets data-wb on each box), and the
+   top bar gives up its spare room instead of overlapping.
+   ========================================================= */
+.free-box[data-wb="s"] #radioPanel .media-tabs-row,
+#radioPanel.free-box[data-wb="s"] .media-tabs-row,
+#radioPanel.free-box[data-wb="xs"] .media-tabs-row { flex-wrap: wrap; }
+#radioPanel.free-box[data-wb="s"] .media-tab-btn,
+#radioPanel.free-box[data-wb="xs"] .media-tab-btn { font-size: 11px; padding: 5px 4px; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+#radioPanel.free-box[data-wb="xs"] .media-tabs { flex: 1 0 100%; }
+.free-box[data-wb="xs"] button, .free-box[data-wb="s"] button { max-width: 100%; }
+.free-box[data-wb="xs"] { font-size: 12px; }
+@media (min-width: 701px) and (max-width: 1100px) {
+  body.room-page #topbar { grid-template-columns: minmax(0, max-content) minmax(0, 1fr) auto; gap: 8px; padding-left: 10px; padding-right: 10px; }
+  body.room-page .topbar-left { min-width: 0; max-width: 100%; column-gap: 10px; }
+  body.room-page .topbar-left h1 { font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  body.room-page .topbar-left .spac3-name-display { overflow: hidden; }
+  body.room-page .topbar-left .spac3-name-display h1 { min-width: 0; }
+  body.room-page .topbar-left .sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  body.room-page .topbar-center .spac3-message-slot { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  body.room-page .topbar-right { gap: 6px; }
+
+  body.room-page #userChip { max-width: 130px; padding-right: 9px; }
+  body.room-page #userChip span:not(.avatar-badge) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+@media (min-width: 701px) and (max-width: 900px) {
+
+  body.room-page #userChip { max-width: 96px; }
+  body.room-page .topbar-left .sub { display: none; }
+}
+#sidePanel.free-box[data-wb="xs"] #chatForm, #sidePanel.free-box[data-wb="s"] #chatForm { flex-direction: column; }
+#sidePanel.free-box[data-wb="xs"] #chatForm button, #sidePanel.free-box[data-wb="s"] #chatForm button { width: 100%; }
+
+/* =========================================================
+   SNAP | FREE SWITCH (snapSwitch.js): replaces the six dots in every movable box's title bar.
+   Both choices are shown side by side -- the lit one is ON (blue magnet = snapping, amber
+   arrows = free moving); the dimmed one is what a click switches to.
+   ========================================================= */
+.snap-switch, .panel-drag-handle.snap-switch {
+  display: inline-flex; align-items: stretch; gap: 0; padding: 2px; height: 28px; min-width: 0;
+  border-radius: 999px; border: 1px solid var(--border); background: rgba(0, 0, 0, 0.35);
+  color: var(--text-dim); font-size: 10px; line-height: 1; flex: 0 0 auto; cursor: pointer;
+  touch-action: none; user-select: none; -webkit-user-select: none; transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.snap-switch .ss-seg { display: inline-flex; align-items: center; gap: 4px; padding: 0 7px; border-radius: 999px; opacity: 0.5; transition: background 0.15s ease, opacity 0.15s ease, color 0.15s ease; }
+.snap-switch .ss-seg b { font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; font-size: 9.5px; }
+.snap-switch .ss-seg:not(.is-on) b { display: none; }
+.snap-switch .ss-seg.is-on { opacity: 1; color: #05060f; }
+.snap-switch .ss-snap.is-on { background: var(--accent, #7dd3fc); box-shadow: 0 0 10px rgba(125, 211, 252, 0.55); }
+.snap-switch .ss-free.is-on { background: #fbbf24; box-shadow: 0 0 10px rgba(251, 191, 36, 0.55); }
+.snap-switch:hover, .snap-switch:focus-visible { border-color: var(--text); color: var(--text); }
+.snap-switch:hover .ss-seg:not(.is-on), .snap-switch:focus-visible .ss-seg:not(.is-on) { opacity: 0.95; background: rgba(255, 255, 255, 0.12); }
+.snap-switch.is-snap { border-color: rgba(125, 211, 252, 0.6); }
+.snap-switch.is-free { border-color: rgba(251, 191, 36, 0.7); border-style: solid; }
+.free-box .panel-drag-handle.snap-switch.is-snap, .free-box .panel-drag-handle.snap-switch.is-free { opacity: 1; }
+.free-box .panel-drag-handle.snap-switch.is-snap { color: var(--text-dim); border-color: rgba(125, 211, 252, 0.6); }
+.free-box .panel-drag-handle.snap-switch.is-free { color: var(--text-dim); border-color: rgba(251, 191, 36, 0.7); border-style: solid; }
+/* a box that is on Free moving wears a thin amber top edge so it is obvious at a glance */
+.free-box.is-loose { box-shadow: inset 0 2px 0 #fbbf24; }
+/* narrow boxes: only the lit side keeps its icon, the word goes away */
+.free-box[data-wb="xs"] .snap-switch .ss-seg b { display: none; }
+.free-box[data-wb="xs"] .snap-switch .ss-seg:not(.is-on) { display: none; }
+.free-box[data-wb="xs"] .snap-switch { padding: 2px; }
+/* title bars of the floating boxes: the switch sits at the start */
+.looks-head .snap-switch,
+.sk-sheet-head .snap-switch,
+.room-bg-settings-head .snap-switch,
+.game-modal-header .snap-switch { margin-right: 8px; height: 26px; }
+.game-modal-header .snap-switch { margin-right: 10px; }
+/* the moment a dragged floating box is clicked onto an edge / neighbour */
+
+.game-modal-header { gap: 6px; }
+.game-modal-header h2 { white-space: nowrap; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 19px; }
+.game-modal-header .snap-switch { flex: 0 0 auto; margin-right: 4px; }
+.game-modal-header .game-alpha input { width: 64px; }
+.game-modal-header .snap-switch .ss-seg b { display: none; }
+
+/* =========================================================
+   GAMES lives in the Room box's header; on phones the room's message and the
+   ▦ Quadrants button live in the top bar (row under the room's name).
+   ========================================================= */
+.game-kiosk { display: none !important; }
+.room-games-btn {
+  display: inline-flex; align-items: center; gap: 5px; flex: 0 0 auto; height: 26px; padding: 0 10px; border-radius: 999px;
+  font-size: 11px; letter-spacing: 0.08em; cursor: pointer; line-height: 1;
+  background: rgba(125, 211, 252, 0.12); border: 1px solid var(--accent, #7dd3fc); color: var(--text);
+}
+.room-games-btn b { font-weight: 800; }
+.room-games-btn:hover, .room-games-btn:focus-visible { background: var(--accent, #7dd3fc); color: #05060f; }
+.room-games-btn.active { box-shadow: 0 0 10px rgba(251, 191, 36, 0.7); border-color: #fbbf24; }
+.free-box[data-wb="xs"] .room-games-btn b { display: none; }
+@media (max-width: 700px) {
+  #layoutBar, #spac3MessageBar { display: none !important; }
+  body.room-page #topbar {
+    grid-template-columns: minmax(0, max-content) minmax(0, 1fr);
+    grid-template-areas: "brand right" "name center";
+    gap: 4px 10px;
+  }
+  body.room-page .topbar-left .spac3-name-block { grid-area: name; }
+  body.room-page .topbar-center {
+    display: flex; grid-area: center; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0; justify-self: stretch;
+  }
+  body.room-page .topbar-center .spac3-message-slot { max-width: none; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; font-size: 12px; }
+  body.room-page .topbar-center #quadBtn { flex: 0 0 auto; white-space: nowrap; }
+}
+/* the Quadrants / Stack boxes words always stay visible, even on the smallest phones */
+@media (max-width: 700px) { body.room-page .topbar-center #quadBtn .q-tx { display: inline; } body.room-page .topbar-center #quadBtn { padding: 6px 10px; font-size: 12px; white-space: nowrap; } body.room-page .topbar-center .room-cog-wrap { flex: 0 0 auto; } }
+#roomPanelWrap.free-box[data-wb="s"] .snap-switch .ss-seg b, #roomPanelWrap.free-box[data-wb="xs"] .snap-switch .ss-seg b,
+#roomPanelWrap.free-box[data-wb="s"] .room-games-btn b { display: none; }
+#roomPanelWrap.free-box[data-wb="s"] .room-games-btn, #roomPanelWrap.free-box[data-wb="xs"] .room-games-btn { padding: 0 8px; }
+
+/* =========================================================
+   POP-OUT SCREEN = just the picture. No border, header or footer: the title bar, transport,
+   search, fullscreen and resize arrows all OVERLAY the screen and are invisible until the mouse
+   is over it (or, on touch, it is tapped). Press and hold anywhere (0.5 s) to pick it up --
+   see mediaFloat.js.
+   ========================================================= */
+
+#radioPanel .media-embed-wrap.is-floating .media-float-find:not([hidden]) { top: 0; bottom: 0; padding-top: 52px; }
+
+/* idle: every control invisible AND not catching the pointer (so a press lands on the screen layer) */
+
+#radioPanel .media-embed-wrap.is-floating:has(.media-float-find:not([hidden])) > .media-float-head,
+#radioPanel .media-embed-wrap.is-floating:has(.media-float-find:not([hidden])) > .fb-foot,
+#radioPanel .media-embed-wrap.is-floating:has(.media-float-find:not([hidden])) > .fb-resize { opacity: 1; pointer-events: auto; }
+#radioPanel .media-embed-wrap.is-floating:has(.media-float-find:not([hidden])) > .media-float-head,
+#radioPanel .media-embed-wrap.is-floating:has(.media-float-find:not([hidden])) > .fb-foot { pointer-events: auto; }
+
+/* while the screen is being moved (picked up by holding, or dragged by its bar), or right after, it is
+   just a screen again: nothing overlays it */
+
+/* holding the screen still (after the move is dropped) = 2x speed while you hold */
+
+/* loop-one-track buttons (Live Listening Party + Creator's Picks) */
+.media-loop-btn { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.media-loop-btn span { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.media-loop-btn.is-on { background: rgba(125, 211, 252, 0.22); border-color: var(--accent, #7dd3fc); color: var(--text); box-shadow: 0 0 10px rgba(125, 211, 252, 0.45); }
+.media-loop-btn.is-on span::after { content: ' on'; }
+
+/* Holding the screen while it is still in the player pops it out (mediaFloat.js): a see-through layer over the picture */
+
+/* the "put the screen back in the player" button on the pop-out screen: an icon (a window docking into a tray), no words */
+
+/* the pop-out screen can be pinched small: its overlay bar loses the title and the words when narrow */
+
+/* Chat: the settings cog + the Friends-only chip sit in the box's header bar, pushed to the right */
+#sidePanel > .panel-toolbar .chat-privacy-chip { margin-left: auto; font-size: 10px; padding: 2px 7px; }
+#sidePanel > .panel-toolbar .chat-settings-btn { margin-left: auto; width: 26px; height: 26px; }
+#sidePanel > .panel-toolbar .chat-privacy-chip:not([hidden]) + .chat-settings-btn { margin-left: 0; }
+#sidePanel.free-box[data-wb="xs"] .chat-privacy-chip { display: none; }
+#sidePanel.panel-minimized .chat-settings-btn, #sidePanel.panel-minimized .chat-privacy-chip { display: none; }
+
+/* ⚙️ menu: the one Snap | Free switch for all boxes */
+.room-cog-menu .room-snap-row { justify-content: space-between; gap: 14px; cursor: default; }
+.room-cog-menu .room-snap-row:hover { background: transparent; }
+.room-snap-label { font-size: 13px; }
+.room-cog-menu .snap-switch .ss-seg b { display: inline; }
+.room-cog-menu .snap-switch .ss-seg:not(.is-on) b { display: none; }
+
+/* no drag dots anywhere: in the free layout the whole title bar is the handle (hold to move), so the little
+   handle button is kept only for keyboard users (Tab to it, arrow keys nudge) and is visually hidden; in the
+   older stacked layout it stays as a small move icon. */
+.panel-drag-handle .move-icon { width: 14px; height: 14px; display: block; }
+html.free-layout .free-box > .panel-toolbar { position: relative; }
+html.free-layout .free-box .panel-drag-handle {
+  position: absolute; width: 1px; height: 1px; min-width: 0; padding: 0; margin: 0; border: 0; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); opacity: 0; pointer-events: none;
+}
+html.free-layout .free-box .panel-drag-handle:focus-visible {
+  width: 26px; height: 26px; clip: auto; clip-path: none; opacity: 1; pointer-events: auto; border: 1px solid var(--accent); left: 0; top: 0;
+}
+html.free-layout .free-box > .panel-toolbar { cursor: grab; }
+
+/* ---- the screen behaves like a normal YouTube player until it is HELD (mediaFloat.js) ----
+   The see-through layer that listens for the hold stops short of the bottom of the picture, so YouTube's
+   own control bar there (play, scrubber, volume, settings, FULLSCREEN) is touched directly and works as it
+   always does. Everything above it is the hold zone: a tap plays / pauses, a half-second hold picks the
+   screen up. On the popped-out screen the move strip and corner arrows that used to cover the bottom of
+   the picture are gone (hold the picture, grab the title bar, pinch, or drag any edge instead). */
+
+/* docked YouTube screen: the little resize handle moves from the bottom-right corner (where YouTube's own
+   fullscreen button lives) to the top-right corner, and the app's own fullscreen button steps aside for it */
+
+/* The strips along the top and bottom of the picture belong to YouTube too (its song title / channel link opens
+   YouTube in a new tab, share and watch-later sit top-right, the control bar with FULLSCREEN is along the bottom),
+   so the hold layer leaves both untouched. On the popped-out screen the SPAC3 buttons now sit at the right
+   as a small pill just under YouTube's title row, instead of stretching over the whole top, so YouTube's title, share and the control bar are all clickable. */
+
+/* drag a track to a new place in the queue / Creator's Picks edit list (room.js: enableRowDrag) */
+#radioPanel .media-queue-item-sortable { touch-action: pan-y; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+#radioPanel .is-row-sorting { touch-action: none; }
+#radioPanel .is-row-sorting .media-queue-item { transition: none; }
+#radioPanel .media-queue-item.is-row-dragging { position: relative; z-index: 5; cursor: grabbing; background: rgba(125, 211, 252, 0.2); border-color: var(--accent, #7dd3fc); box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55); opacity: 0.96; }
+
+#radioPanel .media-edit-picks-btn { margin: 0 0 6px; }
+
+/* the three invisible resize corners of every floating box (floatBox.js); the bottom-right one is the visible grip */
+
+/* on a YouTube screen the bottom-left corner is YouTube's play button */
+
+/* the corner arrows of the big boxes get a roomier invisible hit area so the whole corner drags */
+html.free-layout .free-box > .free-corner::after { content: ''; position: absolute; inset: -6px; }
+
+/* search now sits inside the media controls panel, after the transport buttons, and looks like them */
+#radioPanel .media-embed-wrap.is-floating .media-float-bar > .media-float-find-btn { width: 26px; height: 26px; font-size: 13px; line-height: 1; }
+/* a greyed-out transport button is just part of the header: a press on it moves the screen */
+#radioPanel .media-float-bar .mfb-btn:disabled, #radioPanel .media-float-bar .mfb-orb:disabled { pointer-events: none; }
+
+/* while any box is being carried, videos let the pointer through so it can never get lost inside one */
+body.fb-dragging iframe, body.fb-dragging video, body.fl-dragging iframe, body.fl-dragging video { pointer-events: none !important; }
+
+/* "typing..." dots: three bouncing dots in a small bubble over an avatar while its owner types in chat */
+
+.typing-dots i { width: 6px; height: 6px; border-radius: 50%; background: #6b7280; animation: typing-bounce 1.1s infinite ease-in-out; }
+.typing-dots i:nth-child(2) { animation-delay: .15s; }
+.typing-dots i:nth-child(3) { animation-delay: .3s; }
+
+@media (prefers-reduced-motion: reduce) { .typing-dots i { animation: none; opacity: .8; } }
+/* a speech bubble that is already showing takes the dots' place */
+
+/* ---- chat reactions ---- */
+.chat-line { position: relative; }
+
+.chat-line.chat-line-menu-open { background: rgba(255,255,255,0.07); }
+
+/* ---- online friends: a bright, glowing sun-colored seven-pointed star on the picture ---- */
+.avatar-online { position: relative; display: inline-flex; flex-shrink: 0; }
+
+.online-star svg { width: 100%; height: 100%; display: block; overflow: visible; }
+
+/* The SPAC3 volume pill stays on top of the popped-out radio screen: drag the screen over it and the slider
+   is still there to use (only while a screen is out; otherwise it keeps its usual layer). */
+html.radio-screen-out #volumeControlPanel { z-index: 6500; }
+html.radio-screen-out.sketch-full-open #volumeControlPanel { z-index: 7500; }
+
+/* The picture is the player's own and the page can't see the mouse over a player's frame, so the SPAC3-themed
+   buttons (title bar, bottom strip, resize grip) of a popped-out screen are simply always shown. */
+
+/* The room header (name banner) always sits over every box, however they are stacked or moved. */
+
+/* while a box is being moved or resized, a see-through sheet over the whole page catches the pointer, so it can
+   never slip into a video / YouTube frame (which would swallow the rest of the drag) */
+body.fb-dragging::after, body.fl-dragging::after { content: ''; position: fixed; inset: 0; z-index: 99990; background: transparent; }
+
+/* The search is a box of its own beside the popped-out screen (never over the picture). */
+.media-float-find.mff-box { position: fixed; z-index: 7450; width: min(340px, calc(100vw - 16px)); max-height: calc(100vh - 16px); box-sizing: border-box;
+  display: flex; flex-direction: column; gap: 10px; padding: 0 12px 12px; overflow: auto; color: #fff;
+  background: #12172b; border: 1px solid rgba(150,180,255,0.35); border-radius: 14px; box-shadow: 0 12px 40px rgba(0,0,0,0.55); }
+.media-float-find.mff-box[hidden] { display: none; }
+.media-float-find .mff-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 -12px; padding: 8px 8px 8px 12px; cursor: grab; touch-action: none;
+  background: rgba(124,92,255,0.18); border-bottom: 1px solid rgba(150,180,255,0.22); border-radius: 14px 14px 0 0; }
+.media-float-find .mff-close { padding: 2px 8px; font-size: 13px; line-height: 1.4; border-radius: 999px; }
+/* Games list: title on the left, ✕ across from it on the right */
+
+.game-menu-titlerow h2 { margin: 0; }
+
+/* =========================================================
+   SPAC3 RADiO pop-out screen (mediaFloat.js + screenFloat.js). The wrapper itself becomes position:fixed (never moved in the
+   DOM, so the video keeps playing). A thin frame runs round the picture; drag the corners to resize. The header (title, space
+   media controls, search) is drawn over the top of the picture while there is activity and fades 2 seconds after the last bit.
+   ========================================================= */
+#radioPanel .media-float-head, #radioPanel .media-float-hot, #radioPanel .media-float-corner { display: none; }
+#radioPanel .media-embed-wrap.is-floating {
+  --pad: 6px;
+  position: fixed; z-index: 6000; box-sizing: border-box; padding: var(--pad); touch-action: none;
+  background: #12172b; border: 1px solid rgba(255,255,255,0.22); border-radius: 12px; box-shadow: 0 14px 44px rgba(0,0,0,0.6);
+}
+@media (pointer: coarse) { #radioPanel .media-embed-wrap.is-floating { --pad: 12px; } }
+/* the picture fills the frame, whatever size the window is dragged to */
+#radioPanel .media-embed-wrap.is-floating .media-embed {
+  position: absolute; left: var(--pad); right: var(--pad); top: var(--pad); bottom: var(--pad);
+  width: auto; height: auto; min-height: 0; aspect-ratio: auto; border-radius: 7px; overflow: hidden;
+}
+#radioPanel .media-embed-wrap.is-floating .media-embed iframe,
+#radioPanel .media-embed-wrap.is-floating .media-embed video { width: 100%; height: 100%; }
+#radioPanel .media-embed-wrap.is-floating .media-resize-handle,
+#radioPanel .media-embed-wrap.is-floating .media-fullscreen-btn { display: none; }
+#radioPanel .media-embed-wrap.is-floating .media-autoplay-prompt { z-index: 6; }
+
+/* the header: over the top of the picture, only while there is activity */
+#radioPanel .media-embed-wrap.is-floating .media-float-head {
+  position: absolute; left: var(--pad); right: var(--pad); top: var(--pad); z-index: 7; height: 40px; box-sizing: border-box;
+  display: flex; align-items: center; gap: 8px; padding: 0 6px 0 10px; border-radius: 7px 7px 0 0;
+  background: linear-gradient(180deg, rgba(10,12,42,0.94), rgba(10,12,42,0.72));
+  color: #fff; font-size: 12px; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
+  opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+}
+#radioPanel .media-embed-wrap.is-floating.is-active .media-float-head { cursor: grabbing; }
+#radioPanel .media-embed-wrap.is-floating.ui-on .media-float-head { opacity: 1; pointer-events: auto; }
+#radioPanel .media-float-title { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+
+/* a thin strip along the top edge: moving the mouse over a player's frame can't be seen by the page, but this wakes the header */
+#radioPanel .media-embed-wrap.is-floating .media-float-hot { display: block; position: absolute; left: var(--pad); right: var(--pad); top: 0; height: calc(var(--pad) + 6px); z-index: 4; }
+#radioPanel .media-embed-wrap.is-floating.ui-on .media-float-hot { display: none; }
+
+/* the four corner grips: they sit mostly outside the picture so a player's own corner buttons stay clickable */
+#radioPanel .media-embed-wrap.is-floating .media-float-corner {
+  display: block; position: absolute; width: 22px; height: 22px; z-index: 8; touch-action: none; border-radius: 6px;
+  opacity: 0; transition: opacity 0.25s ease;
+}
+@media (pointer: coarse) { #radioPanel .media-embed-wrap.is-floating .media-float-corner { width: 30px; height: 30px; } }
+#radioPanel .media-embed-wrap.is-floating.ui-on .media-float-corner { opacity: 1; }
+#radioPanel .media-float-corner::before { content: ''; position: absolute; width: 11px; height: 11px; border: 0 solid rgba(190,205,255,0.9); }
+#radioPanel .media-float-corner.mfc-nw { left: -8px; top: -8px; cursor: nwse-resize; }
+#radioPanel .media-float-corner.mfc-ne { right: -8px; top: -8px; cursor: nesw-resize; }
+#radioPanel .media-float-corner.mfc-sw { left: -8px; bottom: -8px; cursor: nesw-resize; }
+#radioPanel .media-float-corner.mfc-se { right: -8px; bottom: -8px; cursor: nwse-resize; }
+#radioPanel .media-float-corner.mfc-nw::before { left: 9px; top: 9px; border-left-width: 3px; border-top-width: 3px; border-top-left-radius: 5px; }
+#radioPanel .media-float-corner.mfc-ne::before { right: 9px; top: 9px; border-right-width: 3px; border-top-width: 3px; border-top-right-radius: 5px; }
+#radioPanel .media-float-corner.mfc-sw::before { left: 9px; bottom: 9px; border-left-width: 3px; border-bottom-width: 3px; border-bottom-left-radius: 5px; }
+#radioPanel .media-float-corner.mfc-se::before { right: 9px; bottom: 9px; border-right-width: 3px; border-bottom-width: 3px; border-bottom-right-radius: 5px; }
+#radioPanel .media-float-corner:hover::before { border-color: #fff; }
+
+/* docked (in the player): the handle and the app's fullscreen button keep clear of YouTube's own buttons */
+#radioPanel .media-embed-wrap:not(.is-floating) > .media-resize-handle, #radioPanel .media-embed-wrap:not(.is-floating) .media-fullscreen-btn,
+#radioPanel .media-embed-wrap:not(.is-floating) .media-autoplay-prompt { z-index: 3; }
+#radioPanel .media-embed-wrap:not(.is-floating):has(.media-embed iframe) > .media-resize-handle { bottom: auto; top: 50%; margin-top: -11px; }
+#radioPanel .media-embed-wrap:not(.is-floating):has(.media-embed iframe) .media-fullscreen-btn { right: 30px; }
+
+/* Minimized boxes are just their strip: no move arrows and no expand arrows. A click anywhere on the strip opens the box
+   again, and dragging it anywhere moves it (room.js: bindPanelDragHandle / bindPanelRestoreOnClick; freeLayout.js). */
+.workspace-box.panel-minimized > .panel-toolbar .panel-drag-handle,
+.workspace-box.panel-minimized > .panel-toolbar .panel-minimize-btn { display: none !important; }
+.workspace-box.panel-minimized > .panel-toolbar { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+.workspace-box.panel-minimized > .panel-toolbar button, .workspace-box.panel-minimized > .panel-toolbar a { cursor: pointer; }
+
+/* A box's name (the label in its toolbar) is always visible, however narrow the box is made or whether it is minimized:
+   the other toolbar bits give way first (button words, the snap switch, privacy chip), never the name. */
+.workspace-box > .panel-toolbar .panel-toolbar-label { display: block !important; flex: 1 1 auto; min-width: 2.6em; }
+
+/* No resize arrow on the media screen (and so no hint pointing at it): the screen is the player's own. */
+#radioPanel .media-embed-wrap > .media-resize-handle { display: none !important; }
+#radioPanel .media-resize-hint > span:first-child { display: none; }
+/* My SPAC3s: the name is a link that does what 🏠 Visit does */
+
+/* A half-width (quadrant) box keeps every toolbar button inside its own box: the GAMES word goes (the 🎮 stays), the name keeps
+   its place, and if there is still not enough room the buttons wrap onto a second line instead of spilling out of the box. */
+@media (max-width: 700px) {
+  .panel-half .panel-toolbar { flex-wrap: wrap; row-gap: 4px; }
+  .panel-half .room-games-btn b { display: none; }
+  .panel-half .room-games-btn { padding: 0 8px; }
+  .panel-half .panel-toolbar-label { flex: 1 1 2.6em; min-width: 2.6em; }
+}
+
+/* "In this room" head count: next to the SPAC3's name in the header (it used to sit in the Room box's toolbar) */
+.spac3-name-display .room-members { flex: 0 0 auto; }
+.spac3-name-display .room-members-btn { height: 24px; padding: 0 8px 0 6px; font-size: 12px; cursor: pointer; }
+.spac3-name-display .room-members-pop { position: fixed; right: auto; top: 60px; left: 8px; z-index: 60; }
+@media (max-width: 700px) { .spac3-name-display .rm-avatars { display: none; } }
+
+/* Log out lives at the bottom of the avatar editor now (the cogwheel took its place in the top bar). */
+
+.avatar-logout-row button { padding: 7px 14px; }
+
+/* ---- private messages between friends (dm.js) ---- */
+
+.dm-conv .dm-log{flex:1;min-height:0;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:6px;overscroll-behavior:contain}
+
+.dm-conv .dm-form{display:flex;align-items:flex-end;gap:6px;padding:8px;border-top:1px solid var(--border)}
+#dmCards{position:fixed;right:14px;bottom:14px;z-index:140;display:flex;flex-direction:column;gap:8px;width:min(320px,calc(100vw - 20px));pointer-events:none}
+
+.dm-card-main span{font-size:13px;color:var(--text-dim);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.dm-btn .dm-n{position:absolute;top:-6px;right:-6px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:var(--accent-2,#c084fc);color:#06070f;font-size:10px;font-weight:700;line-height:16px;text-align:center}
+
+.dm-conv .dm-log{flex:1;min-height:0}
+
+.dm-pane-head .dm-who{flex:1;min-width:0;display:flex;align-items:center;gap:8px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* private chat = the same look as the room chat (dm.js) */
+.dm-conv .dm-log{display:flex;flex-direction:column;gap:7px;flex:1;min-height:0;overflow-y:auto;padding:2px 2px 6px 0;overscroll-behavior:contain}
+
+.dm-conv .av{display:inline-grid;place-items:center;border-radius:50%;line-height:1;flex:none;width:var(--s);height:var(--s);font-size:calc(var(--s)*.54)}
+.dm-conv .cbody{min-width:0;max-width:80%;display:flex;flex-direction:column;gap:1px}
+
+.dm-conv .who{display:block;font-size:11px;font-weight:700;margin:0 0 1px 2px;filter:brightness(1.25) saturate(1.1);cursor:pointer;width:fit-content}
+.dm-conv .t{display:block;padding:7px 12px;border-radius:calc(var(--br,14px)*.8);background:var(--t2,var(--bg-panel-2));overflow-wrap:anywhere;width:fit-content;max-width:100%;white-space:pre-wrap}
+
+.dm-conv .when{color:var(--dim,var(--text-dim));font-size:10px;margin-left:8px;white-space:nowrap}
+
+.dm-conv .dm-form{display:flex;gap:6px;flex:none;padding:8px 0 0}
+.dm-conv .dm-form input{flex:1;min-width:0;height:40px;border-radius:var(--br,14px);background:var(--t1,var(--bg-panel-2));border:1px solid var(--t4,var(--border));padding:0 14px;color:var(--ink,var(--text));font:inherit;outline:none}
+
+/* fun upright captions INSIDE the full-screen brush sliders (thin letters stacked top to bottom, straight and still, never block a touch) */
+
+ /* the knob passes over the letters (a pale letter on the white knob would be unreadable) */
+ /* the short words sit near the middle of the bar, a touch low */
+
+/* zoomed in on satellite relief: a little extra punch so ridges, rivers and lakes feel vivid */
+#globeViz canvas { transition: filter .8s ease; }
+#globeViz.relief canvas { filter: saturate(1.22) contrast(1.06); }
+
+/* reorderable tool buttons (barReorder.js): the button lifts while it is being dragged */
+
+
+/* notifications (toast.js): a holder created on demand, above everything including the full-screen sketchpad */
+#toasts { position: fixed; left: 50%; bottom: 60px; transform: translateX(-50%); z-index: 9500; display: flex; flex-direction: column; gap: 8px; align-items: center; max-width: 80vw; pointer-events: none; }
+.toast { background: #1f2340; color: #e8eaf6; border: 1px solid rgba(255,255,255,0.15); padding: 10px 18px; border-radius: 999px; font-size: 13px; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+.toast-error { background: #fb7185; color: #2b0410; }

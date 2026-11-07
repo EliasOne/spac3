@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0b1020" />
+<title>SPAC3 Sketchpad</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" href="sketch-icon-192.png" />
+<link rel="apple-touch-icon" href="sketch-icon-192.png" />
+<link rel="stylesheet" href="shared.css" />
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="sketch.css" />
+<link rel="stylesheet" href="sketch-page.css" />
+<link rel="stylesheet" href="siteHeader.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Shrikhand&display=swap" />
+</head>
+<body class="room-page sketch-standalone">
+  <!-- The Sketchpad on its own page. It needs no connection: everything it uses is
+       saved on this device by sw.js the first time you open it online, and your
+       drawings live in this browser (the same ones the Sketchpad inside a room
+       uses). "Send to chat" waits in an outbox until you are online in that room.
+       See sketchpad.js / sw.js. -->
+  <div id="stars"></div>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs><linearGradient id="hdrGrad" gradientUnits="userSpaceOnUse" x1="2" y1="0" x2="22" y2="0"><stop offset="0" style="stop-color:var(--hdr-a)"/><stop offset="1" style="stop-color:var(--hdr-b)"/></linearGradient></defs></svg>
+  <header id="topbar">
+    <div class="topbar-left">
+      <a id="logo" href="index.html" title="Back to the globe" aria-label="SPAC3 -- back to the globe">SPAC3</a>
+      <a id="globeLink" href="index.html" title="Go to the globe" aria-label="Go to the globe"><svg class="hico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.2"/><ellipse cx="12" cy="12" rx="4" ry="9.2"/><path d="M3 12h18M4.4 7.2h15.2M4.4 16.8h15.2"/></svg></a>
+    </div>
+    <span id="sketchNetChip" class="sketch-net-chip" role="status" aria-live="polite">Online</span>
+    <div id="authArea"></div>
+  </header>
+  <div id="sketchDock">
+    <div class="workspace-box panel" id="sketchPanel" data-panel="sketch">
+      <div class="panel-toolbar">
+        <h1 class="panel-toolbar-label sketch-title">// Sketchpad</h1>
+      </div>
+      <div class="panel-body sketch-body">
+        <div class="sketch-paper-wrap">
+          <canvas id="sketchCanvas" width="1200" height="800" aria-label="Sketchpad drawing area"></canvas>
+        </div>
+        <div class="sketch-bar" id="sketchBar" role="toolbar" aria-label="Sketchpad tools"></div>
+      </div>
+    </div>
+  </div>
+  <!-- Your stickers: My stickers (made here) and Collected (saved from tags in rooms and gifts). They need an account and a
+       connection, so they are loaded on top of the Sketchpad only when online (stickersPage.js); drawing never waits for them. -->
+  <section id="stickerShelves" class="stk-shelves" aria-label="Stickers"><h2 class="stk-title">Stickers</h2><div id="stickerShelvesBody" class="stk-body"><p class="stk-empty">Loading your stickers...</p></div></section>
+  <div id="modalRoot"></div>
+  <script type="module">
+    import { initSketchpad } from './sketchpad.js';
+    let room = null;
+    try { room = JSON.parse(localStorage.getItem('spac3.lastRoom') || 'null'); } catch { /* ignore */ }
+    // No onSend here: this page never talks to the server, so Send to chat always
+    // waits in the outbox for the last room you visited.
+    const core = initSketchpad({ getRoom: () => room });
+    const chip = document.getElementById('sketchNetChip');
+    const paint = () => {
+      const on = navigator.onLine;
+      chip.textContent = on ? 'Online' : 'Offline -- drawing saved on this device';
+      chip.classList.toggle('is-offline', !on);
+    };
+    window.addEventListener('online', paint); window.addEventListener('offline', paint); paint();
+    const shelves = document.getElementById('stickerShelvesBody');
+    const loadShelves = () => import('./stickers.app.js').then((m) => m.mountStickersPage({ core, root: shelves })).catch(() => { shelves.textContent = 'Stickers could not be loaded. Check your connection and reload.'; });
+    if (navigator.onLine) loadShelves();
+    else { shelves.textContent = 'Your stickers show up here when you are online. Drawing works without a connection.'; window.addEventListener('online', () => { shelves.textContent = ''; loadShelves(); }, { once: true }); }
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  </script>
+</body>
+</html>

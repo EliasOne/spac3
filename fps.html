@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>SPAC3 — Rustbelt Moon (first-person prototype)</title>
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; background: #05060f; overflow: hidden; }
+  #fpsCanvas { display: block; width: 100vw; height: 100vh; }
+
+  #fpsOverlay {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px;
+    background: rgba(2,2,8,0.72);
+    color: #e8eaf6;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    text-align: center;
+    padding: 24px;
+    cursor: pointer;
+    z-index: 10;
+  }
+  #fpsOverlay h1 { margin: 0; font-size: 22px; }
+  #fpsOverlay p { margin: 0; max-width: 420px; font-size: 14px; color: #b9bcdb; line-height: 1.5; }
+  #fpsOverlay .hint { font-size: 12px; color: #8b8fb3; }
+  #fpsOverlay a { color: #7dd3fc; }
+
+  #fpsCrosshair {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 6px; height: 6px; border-radius: 50%;
+    background: rgba(255,255,255,0.85);
+    box-shadow: 0 0 4px rgba(0,0,0,0.6);
+    pointer-events: none;
+    display: none;
+    z-index: 5;
+    transition: background-color .1s ease, transform .1s ease;
+  }
+  /* Briefly toggled on landing a hit -- see flashCrosshair() in fps.js. */
+  #fpsCrosshair.hit {
+    background: #fb7185;
+    box-shadow: 0 0 8px rgba(251,113,133,0.8);
+    transform: translate(-50%, -50%) scale(1.6);
+  }
+
+  /* Full-screen red flash on taking damage -- separate from
+     #fpsCrosshair.hit above, which flashes when YOU land a hit on a
+     monster. This one is the reverse: a monster hitting YOU. Kept as
+     a plain radial-gradient tint (heavier at the screen edges, clear
+     in the middle) so it reads as "ouch" without fully obscuring the
+     crosshair/what you're looking at. Driven entirely from JS via
+     flashDamage() in fps.js -- opacity is snapped to 1 with
+     transitions off, then a reflow-forced transition fades it back to
+     0 over ~1s, so repeated hits each restart the flash from solid
+     red rather than fading from wherever the previous flash was.
+     z-index 4 -- above the canvas, below the HUD text (5) so health/
+     combat messages stay readable through it. */
+  #fpsDamageFlash {
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at center, rgba(220,38,38,0.05) 0%, rgba(220,38,38,0.55) 100%);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 4;
+  }
+
+  #fpsHealthHud {
+    position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 13px; font-weight: 600; color: #e8eaf6;
+    background: rgba(20,22,44,0.7);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 6px 12px;
+    pointer-events: none;
+    display: none;
+    z-index: 5;
+  }
+
+  #fpsCombatMsg {
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 13px; font-weight: 600; color: #e8eaf6;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .25s ease;
+    z-index: 5;
+    white-space: nowrap;
+  }
+  #fpsCombatMsg.show { opacity: 1; }
+
+  #fpsKnockoutOverlay {
+    position: fixed; inset: 0;
+    display: none;
+    align-items: center; justify-content: center;
+    background: rgba(120,10,20,0.35);
+    color: #fff;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 22px; font-weight: 700;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+    pointer-events: none;
+    z-index: 8;
+  }
+
+  #fpsBadge {
+    position: fixed; top: 14px; left: 14px;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 12px; color: #8b8fb3;
+    background: rgba(20,22,44,0.7);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 6px 10px;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  #fpsPauseHint {
+    position: fixed; top: 14px; right: 14px;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 12px; color: #8b8fb3;
+    background: rgba(20,22,44,0.7);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 6px 10px;
+    pointer-events: none;
+    display: none;
+    z-index: 5;
+  }
+
+  #fpsWeaponLabel {
+    position: fixed; bottom: 14px; right: 14px;
+    max-width: 260px;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 12px; color: #e8eaf6;
+    background: rgba(20,22,44,0.7);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 6px 10px;
+    text-align: right;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  #fpsSettings {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    background: rgba(20,22,44,0.85);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 12px 18px;
+    cursor: default; /* sits inside the clickable overlay -- shouldn't look clickable itself */
+    /* The weapon shop below can get tall (10 rows, each with a
+       description) -- capped + scrollable so it never pushes the
+       overlay's bottom edge off a short/mobile viewport instead of
+       just growing forever. */
+    max-height: min(72vh, 560px);
+    overflow-y: auto;
+    box-sizing: border-box;
+  }
+  #fpsSettings .row { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  #fpsSettings label { color: #b9bcdb; white-space: nowrap; }
+  #fpsSettings input[type="range"] { width: 180px; cursor: pointer; }
+  #fpsSettings .value { color: #7dd3fc; font-variant-numeric: tabular-nums; width: 34px; text-align: right; }
+  #fpsSettings .divider { width: 100%; height: 1px; background: rgba(255,255,255,0.08); margin: 2px 0; flex-shrink: 0; }
+  #fpsSettings .setting-title { color: #b9bcdb; font-size: 13px; align-self: flex-start; }
+  #fpsSettings .control-options { flex-direction: column; align-items: flex-start; gap: 6px; }
+
+  /* ---------- weapon shop (in the settings screen) ---------- */
+  #fpsWeaponShopDetails { width: 100%; }
+  #fpsWeaponShopDetails summary {
+    cursor: pointer;
+    list-style: none; /* hide the default triangle -- ::-webkit-details-marker below covers Chrome/Safari */
+  }
+  #fpsWeaponShopDetails summary::-webkit-details-marker { display: none; }
+  #fpsWeaponShopDetails summary::before {
+    content: '▸ ';
+    color: #7dd3fc;
+  }
+  #fpsWeaponShopDetails[open] summary::before {
+    content: '▾ ';
+  }
+  #fpsWeaponShopDetails .weapon-shop,
+  #fpsWeaponShopDetails > .hint {
+    margin-top: 8px;
+  }
+  .weapon-shop {
+    display: flex; flex-direction: column; gap: 8px;
+    width: 100%;
+  }
+  .weapon-shop-row {
+    display: flex; flex-direction: column; gap: 4px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 8px 10px;
+    text-align: left;
+  }
+  .weapon-shop-row.equipped {
+    border-color: rgba(125,211,252,0.5);
+    background: rgba(125,211,252,0.08);
+  }
+  .weapon-shop-top {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .weapon-shop-icon { font-size: 18px; line-height: 1; }
+  .weapon-shop-name { flex: 1; font-size: 13px; font-weight: 600; color: #e8eaf6; }
+  .weapon-shop-dmg { font-size: 11px; color: #7dd3fc; white-space: nowrap; }
+  .weapon-shop-desc { font-size: 12px; color: #b9bcdb; line-height: 1.4; }
+  .weapon-shop-traits { font-size: 11px; color: #facc15; }
+  .weapon-shop-action {
+    align-self: flex-start;
+    margin-top: 2px;
+    font-family: inherit;
+    font-size: 12px; font-weight: 600;
+    color: #05060f;
+    background: #7dd3fc;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 12px;
+    cursor: pointer;
+  }
+  .weapon-shop-action:disabled {
+    cursor: default;
+    opacity: 0.55;
+  }
+  .weapon-shop-action.equipped {
+    background: rgba(255,255,255,0.12);
+    color: #b9bcdb;
+  }
+  #fpsSettings .control-options label { display: flex; align-items: center; gap: 8px; cursor: pointer; white-space: normal; text-align: left; }
+  #fpsSettings .control-options input[type="radio"] { cursor: pointer; }
+
+  /* ---------- mobile touch controls ----------
+     Hidden by default -- fps.js only reveals #fpsTouchControls once it
+     detects a touch-primary device (see isTouchDevice there), so a
+     mouse+keyboard player never sees any of this. Roblox-mobile-style
+     layout: a floating joystick anywhere in the bottom-left "move zone"
+     for walking, drag anywhere else on screen to look around, and a
+     dedicated attack button bottom-right -- see the big input comment
+     in fps.js for how these three zones share the screen without
+     stealing each other's touches. */
+  #fpsTouchControls { display: none; }
+  #fpsTouchLookZone {
+    position: fixed; inset: 0;
+    z-index: 6;
+    touch-action: none;
+  }
+  #fpsJoystickZone {
+    position: fixed; left: 0; bottom: 0;
+    width: 46vw; height: 55vh;
+    max-width: 320px; max-height: 380px;
+    z-index: 7;
+    touch-action: none;
+  }
+  .joystick-base, .joystick-knob {
+    /* fixed (not absolute) because fps.js positions these using raw
+       e.clientX/e.clientY (viewport coordinates). #fpsJoystickZone --
+       the nearest positioned ancestor -- is itself `position: fixed;
+       left: 0; bottom: 0;`, NOT anchored at the viewport's top-left
+       corner, so `absolute` children would measure left/top relative
+       to the zone's own box and land in the wrong place. `fixed`
+       measures from the viewport, same as clientX/clientY, so the
+       math in fps.js lines up correctly. */
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    display: none;
+  }
+  .joystick-base {
+    width: 108px; height: 108px;
+    margin-left: -54px; margin-top: -54px;
+    background: rgba(20,22,44,0.55);
+    border: 1px solid rgba(255,255,255,0.18);
+  }
+  .joystick-knob {
+    width: 52px; height: 52px;
+    margin-left: -26px; margin-top: -26px;
+    background: rgba(125,211,252,0.35);
+    border: 1px solid rgba(125,211,252,0.7);
+  }
+  #fpsJoystickZone.active .joystick-base,
+  #fpsJoystickZone.active .joystick-knob { display: block; }
+
+  #fpsAttackBtn {
+    position: fixed; right: 26px; bottom: max(26px, env(safe-area-inset-bottom));
+    width: 84px; height: 84px;
+    border-radius: 50%;
+    background: rgba(251,113,133,0.25);
+    border: 2px solid rgba(251,113,133,0.75);
+    color: #fff;
+    font-size: 30px;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 7;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  #fpsAttackBtn:active { background: rgba(251,113,133,0.45); }
+
+  #fpsMobileMenuBtn {
+    position: fixed; top: max(14px, env(safe-area-inset-top)); right: 14px;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: rgba(20,22,44,0.7);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #e8eaf6;
+    font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9;
+    touch-action: none;
+  }
+
+  /* Hides the desktop-only "Press Esc" hint / shows the mobile menu
+     button instead -- fps.js toggles the .touch class on <body> once
+     it knows which device this is, and everything mobile-vs-desktop
+     specific keys off that one class. */
+  body.touch #fpsPauseHint { display: none !important; }
+  body.touch #fpsTouchControls { display: block; }
+</style>
+</head>
+<body>
+  <canvas id="fpsCanvas"></canvas>
+  <div id="fpsCrosshair"></div>
+  <div id="fpsDamageFlash"></div>
+  <div id="fpsBadge">🌑 Rustbelt Moon — first-person prototype</div>
+  <div id="fpsPauseHint">Press Esc to change settings / pause</div>
+  <div id="fpsWeaponLabel">Loading your loadout…</div>
+  <div id="fpsHealthHud">❤️ 20/20</div>
+  <div id="fpsCombatMsg"></div>
+  <div id="fpsKnockoutOverlay">💫 Knocked out! Respawning…</div>
+
+  <div id="fpsTouchControls">
+    <div id="fpsTouchLookZone"></div>
+    <div id="fpsJoystickZone">
+      <div class="joystick-base"></div>
+      <div class="joystick-knob"></div>
+    </div>
+    <div id="fpsAttackBtn">⚔️</div>
+    <div id="fpsMobileMenuBtn">☰</div>
+  </div>
+
+  <div id="fpsOverlay">
+    <h1 class="fpsPlanetHeading">🌑 Rustbelt Moon — first-person prototype</h1>
+    <p id="fpsIntroText">
+      This is an early tech test for turning SPAC3's minigame worlds into
+      first-person 3D — same map layout as the regular Mini Space Crafts
+      game, but walkable in first person with your weapon on screen.
+      Fight the same Scrap Crawlers and Junk Golems as the 2D game for
+      real scrap, using whatever weapon you have equipped. Still
+      single-player here -- no other players visible yet.
+    </p>
+    <p class="hint" id="fpsControlsHint">Click anywhere to start. Arrow keys to move, mouse or WASD to look around, left-click or Space to attack, Esc to release the mouse.</p>
+
+    <div id="fpsSettings">
+      <div class="row">
+        <label for="fpsSensitivity">Look sensitivity</label>
+        <input type="range" id="fpsSensitivity" min="0.2" max="3" step="0.1" value="1" />
+        <span class="value" id="fpsSensitivityValue">1.0x</span>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="setting-title">Controls</div>
+      <div class="row control-options">
+        <label><input type="radio" name="fpsControlScheme" id="fpsSchemeArrowsMove" value="arrows-move" checked /> Arrow keys move, WASD looks</label>
+        <label><input type="radio" name="fpsControlScheme" id="fpsSchemeWasdMove" value="wasd-move" /> WASD moves, arrow keys look</label>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Collapsed by default -- with 10 weapon rows plus descriptions
+           this section can get tall, and #fpsOverlay's own "click
+           anywhere to start" only works on the OVERLAY background
+           (settingsPanel below stops that click from reaching it, same
+           reasoning as the sensitivity slider). Left open, a tall shop
+           would eat most of the clickable start area, especially on a
+           short/mobile screen. <details> keeps the settings panel back
+           to its normal compact size until someone actually wants to
+           browse weapons. -->
+      <details id="fpsWeaponShopDetails">
+        <summary class="setting-title">Weapons — <span id="fpsScrapCount">0</span> <span id="fpsScrapTypeLabel">🔩 Rusty Bolts</span></summary>
+        <div id="fpsWeaponShop" class="weapon-shop"></div>
+        <div class="hint">Scrap carries over from (and is spent the same as) the main site's Ship screen. Armor is managed there too -- whatever's equipped applies here as well.</div>
+      </details>
+
+      <div class="hint">Press Esc any time to come back here and adjust settings.</div>
+    </div>
+  </div>
+
+  <script type="importmap">
+    { "imports": { "three": "./three.module.min.js" } }
+  </script>
+  <script type="module" src="fps.js"></script>
+</body>
+</html>

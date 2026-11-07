@@ -1,0 +1,55 @@
+/* The standalone sketchpad page (sketch.html) only: its page layout, plus stand-ins for the room's theme variables that sketch.css uses
+   (the room sets these from the chosen theme; this page has one fixed look). Loaded after style.css and sketch.css. */
+:root {
+  --ink: var(--text); --fb: system-ui, -apple-system, "Segoe UI", sans-serif; --p1: var(--accent); --p4: var(--accent-2);
+  --btnbg: var(--bg-panel-2); --btnb: 1px solid var(--border); --br: 14px; --pr: 18px; --pborder: 1px solid var(--border);
+  --menubg: rgba(17, 20, 43, 0.96); --solid: #151a38;
+  --btnp: linear-gradient(135deg, var(--accent), var(--accent-2)); --btnpink: #05060f; --btnpb: 0 solid transparent;
+  --sel: #fff; --selink: #2a0a5e;
+}
+
+#sketchDock { position: relative; z-index: 1; max-width: 1460px; margin: 0 auto; padding: 0 18px 32px; }
+#sketchDock #sketchPanel { max-width: 760px; margin: 0 auto; }
+#sketchDock .panel-drag-handle { display: none; }
+#sketchDock #sketchPanel.panel-minimized { padding: 6px 12px; }
+#sketchDock #sketchPanel.panel-minimized .panel-toolbar { flex-direction: row; height: auto; padding: 0; gap: 8px; }
+#sketchDock #sketchPanel.panel-minimized .panel-toolbar-label { writing-mode: horizontal-tb; flex: 1; }
+#sketchDock #sketchPanel.panel-minimized .panel-minimize-btn { transform: none; order: 0; }
+#sketchDock #sketchPanel.panel-minimized .panel-toolbar-label { order: 0; }
+#sketchPanel.sketch-full .panel-toolbar, #sketchPanel.sketch-full .box-resize-handle { display: none !important; }
+#sketchPanel.sketch-full .sketch-paper-wrap { flex: 1; min-height: 0; aspect-ratio: auto !important; height: auto !important; }
+@media (max-width: 700px) {
+#sketchDock { display: none; }
+.panel-half .sketch-bar { gap: 4px; }
+.panel-half .sk-btn { height: 32px; font-size: 15px; }
+.panel-half .sketch-viewchip { font-size: 10px; padding: 2px 7px; }
+}
+
+body.sketch-standalone #sketchDock { display: block !important; padding-top: 68px; }
+body.sketch-standalone #sketchDock #sketchPanel { max-width: min(980px, 100%); }
+body.sketch-standalone #topbar { display: flex; justify-content: space-between; gap: 12px; }
+body.sketch-standalone #sketchNetChip { margin-left: auto; }
+/* The drawing box is titled like the Sketchpad box in a room: heading font, capitals. */
+body.sketch-standalone .sketch-title { margin: 0; font-family: var(--hdr-font); font-weight: 400; font-size: 19px; line-height: 1.1; letter-spacing: 0; text-transform: uppercase; color: var(--text); }
+
+/* Stickers page: the two shelves under the Sketchpad (stickersUI.js) */
+.stk-shelves { position: relative; z-index: 1; max-width: min(980px, 100%); margin: 0 auto; padding: 4px 18px 48px; box-sizing: border-box; }
+.stk-title { margin: 8px 0 10px; font-size: 20px; }
+.stk-shelf { margin: 0 0 18px; padding: 12px 14px 14px; border-radius: 14px; border: 1px solid var(--border); background: rgba(255, 255, 255, 0.04); }
+.stk-shelf-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.stk-shelf-head h3 { margin: 0; font-size: 16px; }
+.stk-count { font-size: 12px; opacity: 0.7; font-variant-numeric: tabular-nums; }
+.stk-note { font-size: 12px; opacity: 0.6; }
+.stk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 10px; }
+.stk-tile { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255, 255, 255, 0.04); color: inherit; font: inherit; cursor: pointer; min-width: 0; }
+.stk-tile:hover, .stk-tile:focus-visible { border-color: var(--accent); background: rgba(255, 255, 255, 0.09); outline: none; }
+.stk-thumb { display: flex; align-items: center; justify-content: center; width: 100%; aspect-ratio: 1; border-radius: 8px; overflow: hidden;
+  background-color: #cfd3e6; background-image: linear-gradient(45deg, #b9bed6 25%, transparent 25%, transparent 75%, #b9bed6 75%), linear-gradient(45deg, #b9bed6 25%, transparent 25%, transparent 75%, #b9bed6 75%); background-size: 12px 12px; background-position: 0 0, 6px 6px; }
+.stk-thumb img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+.stk-name { max-width: 100%; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stk-empty { margin: 4px 0; font-size: 13px; opacity: 0.7; }
+.stk-guest { padding: 14px; border-radius: 14px; border: 1px dashed var(--border); text-align: center; }
+.stk-guest p { margin: 0 0 10px; }
+.stk-switch { display: flex; align-items: center; gap: 6px; margin: 2px 0 8px; font-size: 13px; }
+.stk-sheet .stk-del { margin-right: auto; }
+@media (max-width: 700px) { .stk-shelves { padding: 4px 12px 40px; } .stk-grid { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); } }
