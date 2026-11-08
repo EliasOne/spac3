@@ -37,7 +37,32 @@ export async function signedInContext(browser, user) {
   await context.addInitScript(([key, value]) => {
     window.localStorage.setItem(key, value);
   }, [STORAGE_KEY, JSON.stringify(session)]);
+  await context.addInitScript(recordToasts);
   return context;
+}
+
+// Runs inside the page: keeps every toast message the app shows in
+// window.__toasts, so a failing test can report them after they fade.
+function recordToasts() {
+  window.__toasts = [];
+  new MutationObserver((records) => {
+    for (const r of records) for (const node of r.addedNodes) {
+      if (node.nodeType === 1 && node.classList.contains('toast')) window.__toasts.push(node.textContent);
+    }
+  }).observe(document, { childList: true, subtree: true });
+}
+
+// Starts collecting console errors for a page; call before page.goto().
+export function watchConsole(page) {
+  const errors = [];
+  page.on('console', (msg) => { if (msg.type() === 'error') errors.push(msg.text()); });
+  return errors;
+}
+
+// A readable summary of what the page told the user, for failure messages.
+export async function describePage(page, consoleErrors = []) {
+  const toasts = await page.evaluate(() => window.__toasts || []).catch(() => []);
+  return `toasts: ${JSON.stringify(toasts)}\nconsole errors: ${JSON.stringify(consoleErrors.slice(-8))}`;
 }
 
 // Collects uncaught page errors so a test can assert there were none.
@@ -59,5 +84,13 @@ export async function sendChat(page, text) {
   }, text);
 }
 
-export const chatLine = (page, text) =>
-  page.locator('#chatLog .chat-line', { hasText: text });
+// True when the chat log contains a message whose text is EXACTLY `text`.
+// (Each line's time sits right after the text with no space, so a plain
+// substring match can confuse "message 25" + "08:04" with "message 250".)
+export function chatHasMessage(page, text) {
+  return page.evaluate((wanted) => [...document.querySelectorAll('#chatLog .chat-line .t')].some((t) => {
+    const copy = t.cloneNode(true);
+    copy.querySelectorAll('.when, .chat-lock').forEach((el) => el.remove());
+    return copy.textContent.trim() === wanted;
+  }), text);
+}

@@ -5,7 +5,8 @@
 
 import { test, expect } from '@playwright/test';
 import {
-  USERS, ROOM, roomUrl, signedInContext, trackPageErrors, sendChat, chatLine,
+  USERS, ROOM, roomUrl, signedInContext, trackPageErrors, sendChat, chatHasMessage,
+  watchConsole, describePage,
 } from './helpers.js';
 
 test.describe('pages load', () => {
@@ -45,18 +46,33 @@ test.describe('room', () => {
     const bobCtx = await signedInContext(browser, USERS.bob);
     const alice = await aliceCtx.newPage();
     const bob = await bobCtx.newPage();
+    const aliceErrors = watchConsole(alice);
+    const bobErrors = watchConsole(bob);
     await alice.goto(roomUrl());
     await bob.goto(roomUrl());
     await expect(alice.locator('#spac3Name')).toHaveText(ROOM.name);
     await expect(bob.locator('#spac3Name')).toHaveText(ROOM.name);
-    // Give both realtime connections a moment to join the room channel.
-    await alice.waitForTimeout(1500);
 
+    // Step 1: the message must reach the database. (Before sending, the app
+    // checks the live room connection and silently skips the send if it's down.)
     const text = `hello from bob ${Date.now()}`;
+    const posted = bob.waitForResponse(
+      (r) => r.url().includes('/rest/v1/messages') && r.request().method() === 'POST',
+      { timeout: 10_000 },
+    ).catch(() => null);
     await sendChat(bob, text);
+    const res = await posted;
+    if (!res) throw new Error(`Bob's message was never sent to the database.\n${await describePage(bob, bobErrors)}`);
+    expect(res.status(), `Insert failed: ${await res.text()}`).toBe(201);
 
-    await expect(chatLine(bob, text)).toBeAttached();
-    await expect(chatLine(alice, text)).toBeAttached();
+    // Step 2: realtime delivers it to both screens (there's no optimistic
+    // render, so even the sender only sees it via realtime).
+    await expect.poll(() => chatHasMessage(bob, text), {
+      message: `Bob's own message never arrived over realtime.\n${await describePage(bob, bobErrors)}`,
+    }).toBe(true);
+    await expect.poll(() => chatHasMessage(alice, text), {
+      message: `Alice never received Bob's message.\n${await describePage(alice, aliceErrors)}`,
+    }).toBe(true);
     await aliceCtx.close();
     await bobCtx.close();
   });
@@ -69,7 +85,8 @@ test.describe('known bugs (Supabase audit)', () => {
     const page = await context.newPage();
     await page.goto(roomUrl());
     await expect(page.locator('#chatLog .chat-line').first()).toBeAttached();
-    await expect(chatLine(page, 'Seed message 250')).toBeAttached({ timeout: 5_000 });
+    await page.waitForLoadState('networkidle');
+    expect(await chatHasMessage(page, 'Seed message 250')).toBe(true);
     await context.close();
   });
 
