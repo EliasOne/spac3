@@ -6,7 +6,7 @@
 import { test, expect } from '@playwright/test';
 import {
   USERS, ROOM, roomUrl, signedInContext, trackPageErrors, sendChat, chatHasMessage,
-  watchConsole, describePage,
+  watchConsole, describePage, watchRealtime, waitForRealtime,
 } from './helpers.js';
 
 test.describe('pages load', () => {
@@ -48,10 +48,16 @@ test.describe('room', () => {
     const bob = await bobCtx.newPage();
     const aliceErrors = watchConsole(alice);
     const bobErrors = watchConsole(bob);
+    const aliceRealtime = watchRealtime(alice);
+    const bobRealtime = watchRealtime(bob);
     await alice.goto(roomUrl());
     await bob.goto(roomUrl());
     await expect(alice.locator('#spac3Name')).toHaveText(ROOM.name);
     await expect(bob.locator('#spac3Name')).toHaveText(ROOM.name);
+
+    // Realtime switches on database-change listening a moment after joining
+    // the room. Wait for both, like real users who don't type within 1 s.
+    await Promise.all([waitForRealtime(aliceRealtime), waitForRealtime(bobRealtime)]);
 
     // Step 1: the message must reach the database. (Before sending, the app
     // checks the live room connection and silently skips the send if it's down.)
@@ -68,10 +74,10 @@ test.describe('room', () => {
     // Step 2: realtime delivers it to both screens (there's no optimistic
     // render, so even the sender only sees it via realtime).
     await expect.poll(() => chatHasMessage(bob, text), {
-      message: `Bob's own message never arrived over realtime.\n${await describePage(bob, bobErrors)}`,
+      message: `Bob's own message never arrived over realtime.\n${await describePage(bob, bobErrors, bobRealtime)}`,
     }).toBe(true);
     await expect.poll(() => chatHasMessage(alice, text), {
-      message: `Alice never received Bob's message.\n${await describePage(alice, aliceErrors)}`,
+      message: `Alice never received Bob's message.\n${await describePage(alice, aliceErrors, aliceRealtime)}`,
     }).toBe(true);
     await aliceCtx.close();
     await bobCtx.close();
