@@ -58,6 +58,8 @@ test.describe('room', () => {
     // Realtime switches on database-change listening a moment after joining
     // the room. Wait for both, like real users who don't type within 1 s.
     await Promise.all([waitForRealtime(aliceRealtime), waitForRealtime(bobRealtime)]);
+    expect(bobRealtime.error, 'Supabase refused the room\'s live-update listeners').toBeNull();
+    expect(aliceRealtime.error, 'Supabase refused the room\'s live-update listeners').toBeNull();
 
     // Step 1: the message must reach the database. (Before sending, the app
     // checks the live room connection and silently skips the send if it's down.)
@@ -96,16 +98,18 @@ test.describe('known bugs (Supabase audit)', () => {
     await context.close();
   });
 
-  test('B2: opening a room makes no requests to the missing sticker_tags table', async ({ browser }) => {
-    test.fail(true, 'Audit B2: room still queries sticker_tags. Remove test.fail() when Sticker Tags moves to Presence.');
+  test('B2 (fixed): opening a room makes no requests to the missing sticker_tags table', async ({ browser }) => {
     const context = await signedInContext(browser, USERS.alice);
     const page = await context.newPage();
     const stickerTagRequests = [];
     page.on('request', (req) => { if (req.url().includes('sticker_tags')) stickerTagRequests.push(req.url()); });
+    const realtime = watchRealtime(page);
     await page.goto(roomUrl());
     await expect(page.locator('#spac3Name')).toHaveText(ROOM.name);
-    await page.waitForLoadState('networkidle');
+    await waitForRealtime(realtime);
     expect(stickerTagRequests).toEqual([]);
+    expect(realtime.error, 'Room live updates must not be refused').toBeNull();
+    expect(realtime.ready).toBe(true);
     await context.close();
   });
 });

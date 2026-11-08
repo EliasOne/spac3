@@ -74,4 +74,12 @@ On Cloudflare Pages, put these in the project's build settings and add the envir
 - Every intended change to a deployed file gets added to `EXPECTED_CHANGES` in `scripts/verify-baseline.mjs`, in the same commit.
 - Tag `v147-baseline` is the exact deployed v147. Roll back with `git checkout v147-baseline`.
 
+## Hotfixes applied to the legacy bundles
+
+The minified `*.app.js` files are not edited, except for urgent production fixes listed here. The Phase 1 rebuild must carry each one over.
+
+| Date | File | Change | Why |
+|---|---|---|---|
+| 2026-11-08 | `room.app.js` | Removed the three realtime listeners on `sticker_tags`; the sticker-tag loader returns no tags instead of querying `sticker_tags`. | `sticker_tags` doesn't exist, and Supabase refused the room channel's whole set of database listeners because of it. Live chat, reactions, games, radio queue and room-setting updates never arrived; they only appeared on refresh. Sticker Tags is being rebuilt on Presence (see the sticker-tags spec in the SPAC3 project). |
+
 See the refactor game plan in the SPAC3 project for the phases that follow.

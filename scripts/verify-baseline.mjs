@@ -15,8 +15,12 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = path.join(root, 'dist');
 
-// Rebuilt from npm instead of copied; same library version (2.117.3).
-const EXPECTED_CHANGES = new Set(['supabase-js.bundle.js']);
+const EXPECTED_CHANGES = new Set([
+  // Rebuilt from npm instead of copied; same library version (2.117.3).
+  'supabase-js.bundle.js',
+  // Hotfix: removed the sticker_tags listeners/query that broke all room live updates (see README).
+  'room.app.js',
+]);
 
 async function listFiles(dir, base = dir) {
   const out = [];

@@ -59,18 +59,20 @@ export function watchConsole(page) {
   return errors;
 }
 
-// Watches the page's realtime websocket. Supabase sends a "system" message
-// once database-change listening is ready ("Subscribed to PostgreSQL"), or
-// an error if it couldn't set it up. Call before page.goto().
-export function watchRealtime(page) {
-  const state = { ready: false, system: [] };
+// Watches the page's realtime websocket for the ROOM channel. Supabase sends a
+// "system" message once database-change listening is ready ("Subscribed to
+// PostgreSQL"), or an error if it refused (e.g. a listener on a missing table
+// makes it refuse ALL of that channel's listeners). Call before page.goto().
+export function watchRealtime(page, topic = 'realtime:room:') {
+  const state = { ready: false, error: null, system: [] };
   page.on('websocket', (ws) => {
     if (!ws.url().includes('/realtime/')) return;
     ws.on('framereceived', ({ payload }) => {
       const text = typeof payload === 'string' ? payload : payload.toString();
-      if (!text.includes('system')) return;
-      state.system.push(text.slice(0, 300));
+      if (!text.includes('system') || !text.includes(topic)) return;
+      state.system.push(text.slice(0, 400));
       if (text.includes('Subscribed to PostgreSQL')) state.ready = true;
+      else if (text.includes('"error"')) state.error = text.slice(0, 400);
     });
   });
   return state;
@@ -80,7 +82,7 @@ export function watchRealtime(page) {
 // on timeout: the assertion that follows reports what realtime said instead.
 export async function waitForRealtime(state, timeout = 10_000) {
   const end = Date.now() + timeout;
-  while (!state.ready && Date.now() < end) await new Promise((r) => setTimeout(r, 100));
+  while (!state.ready && !state.error && Date.now() < end) await new Promise((r) => setTimeout(r, 100));
   return state.ready;
 }
 
@@ -88,7 +90,7 @@ export async function waitForRealtime(state, timeout = 10_000) {
 export async function describePage(page, consoleErrors = [], realtime = null) {
   const toasts = await page.evaluate(() => window.__toasts || []).catch(() => []);
   let out = `toasts: ${JSON.stringify(toasts)}\nconsole errors: ${JSON.stringify(consoleErrors.slice(-8))}`;
-  if (realtime) out += `\nrealtime ready: ${realtime.ready}\nrealtime system messages: ${JSON.stringify(realtime.system.slice(-5))}`;
+  if (realtime) out += `\nroom realtime ready: ${realtime.ready}\nroom realtime error: ${realtime.error}\nroom realtime system messages: ${JSON.stringify(realtime.system.slice(-5))}`;
   return out;
 }
 
