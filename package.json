@@ -13,7 +13,8 @@
     "@supabase/supabase-js": "2.117.3"
   },
   "devDependencies": {
-    "esbuild": "0.25.12"
+    "esbuild": "0.25.12",
+    "supabase": "^3.0.0"
   },
   "engines": {
     "node": ">=22"
