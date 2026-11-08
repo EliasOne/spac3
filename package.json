@@ -7,12 +7,16 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "dev": "node scripts/build.mjs --serve",
-    "verify": "node scripts/verify-baseline.mjs"
+    "dev:local": "node scripts/build.mjs --serve --local",
+    "verify": "node scripts/verify-baseline.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.117.3"
   },
   "devDependencies": {
+    "@playwright/test": "1.65.0",
     "esbuild": "0.25.12",
     "supabase": "^3.0.0"
   },
